@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AgentBit.Ccxt.Base
 {
@@ -122,10 +123,12 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchTicker
     {
+        public Task<TickerInfo> FetchTicker(string symbol, Dictionary<string, string> @params = null);
     }
 
     public interface IFetchTickers
     {
+        public Task<Dictionary<string, TickerInfo>> FetchTickers(string[] symbols = null, Dictionary<string, string> @params = null);
     }
 
     public interface IFetchTime
