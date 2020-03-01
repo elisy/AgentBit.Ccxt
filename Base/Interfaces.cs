@@ -123,12 +123,12 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchTicker
     {
-        public Task<TickerInfo> FetchTicker(string symbol, Dictionary<string, string> @params = null);
+        public Task<Ticker> FetchTicker(string symbol);
     }
 
     public interface IFetchTickers
     {
-        public Task<Dictionary<string, TickerInfo>> FetchTickers(string[] symbols = null, Dictionary<string, string> @params = null);
+        public Task<Dictionary<string, Ticker>> FetchTickers(string[] symbols = null);
     }
 
     public interface IFetchTime

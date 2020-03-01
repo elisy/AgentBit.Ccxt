@@ -10,14 +10,53 @@ namespace AgentBit.Ccxt
     {
         public Bitfinex() : base()
         {
+            CommonCurrencies = new Dictionary<string, string>() {
+                { "ABS", "ABYSS" },
+                { "AIO", "AION" },
+                { "ALG", "ALGO" }, // https://github.com/ccxt/ccxt/issues/6034
+                { "AMP", "AMPL" },
+                { "ATM", "ATMI" },
+                { "ATO", "ATOM" }, // https://github.com/ccxt/ccxt/issues/5118
+                { "BAB", "BCH" },
+                { "CTX", "CTXC" },
+                { "DAD", "DADI" },
+                { "DAT", "DATA" },
+                { "DSH", "DASH" },
+                { "DRK", "DRK" },
+                { "GSD", "GUSD" },
+                { "HOT", "Hydro Protocol" },
+                { "IOS", "IOST" },
+                { "IOT", "IOTA" },
+                { "IQX", "IQ" },
+                { "MIT", "MITH" },
+                { "MNA", "MANA" },
+                { "NCA", "NCASH" },
+                { "ORS", "ORS Group" }, // conflict with Origin Sport #3230
+                { "POY", "POLY" },
+                { "QSH", "QASH" },
+                { "QTM", "QTUM" },
+                { "SEE", "SEER" },
+                { "SNG", "SNGLS" },
+                { "SPK", "SPANK" },
+                { "STJ", "STORJ" },
+                { "TSD", "TUSD" },
+                { "YYW", "YOYOW" },
+                { "UDC", "USDC" },
+                { "UST", "USDT" },
+                { "UTN", "UTNP" },
+                { "VSY", "VSYS" },
+                { "WAX", "WAXP" },
+                { "XCH", "XCHF" },
+                { "ZBT", "ZB" }            
+            };
         }
 
-        public async Task<TickerInfo> FetchTicker(string symbol, Dictionary<string, string> @params = null)
+        public async Task<Ticker> FetchTicker(string symbol)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<Dictionary<string, TickerInfo>> FetchTickers(string[] symbols = null, Dictionary<string, string> @params = null)
+        public async Task<Dictionary<string, Ticker>> FetchTickers(string[] symbols = null)
         {
             throw new NotImplementedException();
         }

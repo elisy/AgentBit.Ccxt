@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AgentBit.Ccxt.Base
 {
-    public class TickerInfo
+    public class Ticker
     {
         public string Symbol { get; set; }
         public uint Timestamp { get; set; }
@@ -22,6 +22,7 @@ namespace AgentBit.Ccxt.Base
         public double Open { get; set; }
         public double Close { get; set; }
         public double Last { get; set; }
+
         /// <summary>
         /// Previous Day Close
         /// </summary>
