@@ -13,13 +13,19 @@ namespace AgentBit.Ccxt.Base
             Method = HttpMethod.Get;
         }
 
-        public string BaseUrl { get; set; }
+        public Uri BaseUri { get; set; }
         public string Path { get; set; }
         public string ApiType { get; set; }
         public HttpMethod Method { get; set; }
         public HttpRequestHeaders Headers { get; set; }
 
         public TimeSpan Timeout { get; set; }
-        public object Body { get; set; }
+
+        public Dictionary<string, string> Params { get; set; }
+
+        /// <summary>
+        /// StringContent or FormUrlEncodedContent
+        /// </summary>
+        public ByteArrayContent Body { get; set; }
     }
 }

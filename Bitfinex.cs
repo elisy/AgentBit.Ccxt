@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
@@ -8,15 +9,18 @@ namespace AgentBit.Ccxt
 {
     public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchMarkets, IFetchTickers, IFetchTicker
     {
+        readonly Uri ApiPublic = new Uri("https://api.bitfinex.com");
+
         public Bitfinex() : base()
         {
+
             CommonCurrencies = new Dictionary<string, string>() {
                 { "ABS", "ABYSS" },
                 { "AIO", "AION" },
-                { "ALG", "ALGO" }, // https://github.com/ccxt/ccxt/issues/6034
+                { "ALG", "ALGO" },
                 { "AMP", "AMPL" },
                 { "ATM", "ATMI" },
-                { "ATO", "ATOM" }, // https://github.com/ccxt/ccxt/issues/5118
+                { "ATO", "ATOM" },
                 { "BAB", "BCH" },
                 { "CTX", "CTXC" },
                 { "DAD", "DADI" },
@@ -31,7 +35,7 @@ namespace AgentBit.Ccxt
                 { "MIT", "MITH" },
                 { "MNA", "MANA" },
                 { "NCA", "NCASH" },
-                { "ORS", "ORS Group" }, // conflict with Origin Sport #3230
+                { "ORS", "ORS Group" },
                 { "POY", "POLY" },
                 { "QSH", "QASH" },
                 { "QTM", "QTUM" },
@@ -58,6 +62,14 @@ namespace AgentBit.Ccxt
 
         public async Task<Dictionary<string, Ticker>> FetchTickers(string[] symbols = null)
         {
+            var markets = await FetchMarkets();
+            var response = await Request(new Base.Request()
+            {
+                BaseUri = ApiPublic,
+                Path = "tickers",
+                Method = HttpMethod.Get,
+                Timeout = TimeSpan.FromSeconds(30)
+            });
             throw new NotImplementedException();
         }
     }

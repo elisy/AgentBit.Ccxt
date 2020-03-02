@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace AgentBit.Ccxt.Base
     /// <summary>
     /// Base class for all exchanges
     /// </summary>
-    public class Exchange: IDisposable
+    public class Exchange: IDisposable, IFetchMarkets
     {
         public TimeSpan Timeout { get; set; }
 
@@ -25,6 +26,10 @@ namespace AgentBit.Ccxt.Base
                 { 
                     _httpClient = new HttpClient(SocketsHttpHandler);
                     _httpClient.Timeout = Timeout;
+
+                    _httpClient.DefaultRequestHeaders.Connection.Clear();
+                    _httpClient.DefaultRequestHeaders.ConnectionClose = false;
+                    _httpClient.DefaultRequestHeaders.Connection.Add("Keep-Alive");
                 }
 
                 return _httpClient;
@@ -36,8 +41,9 @@ namespace AgentBit.Ccxt.Base
         public Exchange()
         {
             SocketsHttpHandler = new SocketsHttpHandler();
-            SocketsHttpHandler.MaxConnectionsPerServer = 5;
+            //SocketsHttpHandler.MaxConnectionsPerServer = 5;
             SocketsHttpHandler.UseCookies = false;
+            SocketsHttpHandler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             Timeout = TimeSpan.FromSeconds(5);
         }
@@ -60,15 +66,30 @@ namespace AgentBit.Ccxt.Base
             //}
         }
 
-        public virtual async Task Request(Request request)
+        public virtual async Task<HttpResponseMessage> Request(Request request)
         {
             await Throttle();
 
             Sign(request);
 
+            HttpRequestMessage message = new HttpRequestMessage()
+            {
+                RequestUri = new Uri(request.BaseUri, request.Path),
+                Method = request.Method
+            };
+            foreach (var header in request.Headers)
+                message.Headers.Add(header.Key, header.Value);
 
-            throw new NotImplementedException();
+            HttpResponseMessage response = await _httpClient.SendAsync(message);
+            return await HandleRestResponse(response, request);
         }
+
+        public virtual async Task<HttpResponseMessage> HandleRestResponse(HttpResponseMessage response, Request request)
+        {
+            var text = await response.Content.ReadAsStringAsync();
+            return response;
+        }
+
 
         public virtual void Sign(Request request)
         {
@@ -79,6 +100,11 @@ namespace AgentBit.Ccxt.Base
         {
             if (_httpClient != null)
                 _httpClient.Dispose();
+        }
+
+        public virtual async Task<Dictionary<string, Market>> FetchMarkets()
+        {
+            throw new NotImplementedException();
         }
     }
 }
