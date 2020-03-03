@@ -7,7 +7,7 @@ namespace AgentBit.Ccxt.Base
     public class Ticker
     {
         public string Symbol { get; set; }
-        public uint Timestamp { get; set; }
+        public ulong Timestamp { get; set; }
         public DateTime DateTime { get; set; }
         public double High { get; set; }
         public double Low { get; set; }

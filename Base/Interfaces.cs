@@ -129,7 +129,7 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchTickers
     {
-        public Task<Dictionary<string, Ticker>> FetchTickers(string[] symbols = null);
+        public Task<Ticker[]> FetchTickers(string[] symbols = null);
     }
 
     public interface IFetchTime

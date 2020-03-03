@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AgentBit.Ccxt.Base
@@ -15,6 +16,9 @@ namespace AgentBit.Ccxt.Base
     /// </summary>
     public class Exchange : IDisposable, IFetchMarkets
     {
+        public string ApiKey { get; set; }
+        public string ApiSecret { get; set; }
+
         public TimeSpan Timeout { get; set; }
 
         public SocketsHttpHandler SocketsHttpHandler { get; set; }
@@ -48,24 +52,34 @@ namespace AgentBit.Ccxt.Base
             SocketsHttpHandler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             Timeout = TimeSpan.FromSeconds(5);
+
+            RateLimit = 2 * 1000;
         }
 
-
+        /// <summary>
+        /// Request rate limit in milliseconds = seconds * 1000
+        /// </summary>
+        public int RateLimit { get; set; }
+        protected DateTime _lastRequestTime = DateTime.Now;
+        protected SemaphoreSlim _throttleSemaphore = new SemaphoreSlim(1, 1);
         /// <summary>
         /// Request rate limiter
         /// </summary>
         public virtual async Task Throttle()
         {
-            throw new NotImplementedException();
-            //await mySemaphoreSlim.WaitAsync();
-            //try
-            //{
-            //    await Stuff();
-            //}
-            //finally
-            //{
-            //    mySemaphoreSlim.Release();
-            //}
+            var delay = (int)(RateLimit - (DateTime.Now - _lastRequestTime).TotalMilliseconds);
+            if (delay > 0)
+            {
+                await _throttleSemaphore.WaitAsync();
+                try
+                {
+                    await Task.Delay(delay);
+                }
+                finally
+                {
+                    _throttleSemaphore.Release();
+                }
+            }
         }
 
         public virtual async Task<Response> Request(Request request)
@@ -81,10 +95,13 @@ namespace AgentBit.Ccxt.Base
                 Method = request.Method,
                 Content = request.Body
             };
-            foreach (var header in request.Headers)
-                message.Headers.Add(header.Key, header.Value);
+            if (request.Headers != null)
+            {
+                foreach (var header in request.Headers)
+                    message.Headers.Add(header.Key, header.Value);
+            }
 
-            HttpResponseMessage response = await _httpClient.SendAsync(message);
+            HttpResponseMessage response = await HttpClient.SendAsync(message);
             return await HandleRestResponse(response, request);
         }
 
