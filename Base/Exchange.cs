@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace AgentBit.Ccxt.Base
@@ -11,7 +13,7 @@ namespace AgentBit.Ccxt.Base
     /// <summary>
     /// Base class for all exchanges
     /// </summary>
-    public class Exchange: IDisposable, IFetchMarkets
+    public class Exchange : IDisposable, IFetchMarkets
     {
         public TimeSpan Timeout { get; set; }
 
@@ -23,7 +25,7 @@ namespace AgentBit.Ccxt.Base
             get
             {
                 if (_httpClient == null)
-                { 
+                {
                     _httpClient = new HttpClient(SocketsHttpHandler);
                     _httpClient.Timeout = Timeout;
 
@@ -66,16 +68,18 @@ namespace AgentBit.Ccxt.Base
             //}
         }
 
-        public virtual async Task<HttpResponseMessage> Request(Request request)
+        public virtual async Task<Response> Request(Request request)
         {
             await Throttle();
 
             Sign(request);
+            SetBody(request);
 
             HttpRequestMessage message = new HttpRequestMessage()
             {
                 RequestUri = new Uri(request.BaseUri, request.Path),
-                Method = request.Method
+                Method = request.Method,
+                Content = request.Body
             };
             foreach (var header in request.Headers)
                 message.Headers.Add(header.Key, header.Value);
@@ -84,16 +88,35 @@ namespace AgentBit.Ccxt.Base
             return await HandleRestResponse(response, request);
         }
 
-        public virtual async Task<HttpResponseMessage> HandleRestResponse(HttpResponseMessage response, Request request)
+        public virtual async Task<Response> HandleRestResponse(HttpResponseMessage response, Request request)
         {
-            var text = await response.Content.ReadAsStringAsync();
-            return response;
+            Response result = new Response()
+            {
+                Request = request,
+                HttpResponseMessage = response,
+                Text = await response.Content.ReadAsStringAsync()
+            };
+            return result;
         }
 
 
         public virtual void Sign(Request request)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Sign method should be overriden");
+        }
+
+
+        /// <summary>
+        /// Fills request.Body. Default is Json
+        /// </summary>
+        /// <param name="request"></param>
+        public virtual void SetBody(Request request)
+        {
+            if (request.Params != null && request.Params.Count != 0)
+            {
+                var json = JsonSerializer.Serialize<Dictionary<string, string>>(request.Params);
+                request.Body = new StringContent(json, Encoding.UTF8, "application/json");
+            }
         }
 
         public void Dispose()
@@ -102,9 +125,18 @@ namespace AgentBit.Ccxt.Base
                 _httpClient.Dispose();
         }
 
-        public virtual async Task<Dictionary<string, Market>> FetchMarkets()
+
+        public virtual async Task<Market[]> FetchMarkets()
         {
             throw new NotImplementedException();
+        }
+
+        protected string CommonCurrencyCode(string code)
+        {
+            if (CommonCurrencies.ContainsKey(code))
+                return CommonCurrencies[code];
+            else
+                return code;
         }
     }
 }

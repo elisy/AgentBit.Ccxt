@@ -16,7 +16,7 @@ namespace AgentBit.Ccxt.Base
         public string Base { get; set; }
         public string Quote { get; set; }
         public bool Active { get; set; }
-        public double PricePrecision { get; set; }
+        public int PricePrecision { get; set; }
         public double PriceMin { get; set; }
         public double PriceMax { get; set; }
         public double AmountPrecision { get; set; }

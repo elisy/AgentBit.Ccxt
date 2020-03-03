@@ -83,7 +83,7 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchMarkets
     {
-        public Task<Dictionary<string, Market>> FetchMarkets();
+        public Task<Market[]> FetchMarkets();
     }
 
     public interface IFetchMyTrades

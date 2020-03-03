@@ -11,6 +11,7 @@ namespace AgentBit.Ccxt.Base
         public Request()
         {
             Method = HttpMethod.Get;
+            Timeout = TimeSpan.FromSeconds(10);
         }
 
         public Uri BaseUri { get; set; }

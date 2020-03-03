@@ -32,6 +32,6 @@ namespace AgentBit.Ccxt.Base
         public double Average { get; set; }
         public double BaseVolume { get; set; }
         public double QuoteVolume { get; set; }
-        public string Info { get; set; }
+        public object Info { get; set; }
     }
 }
