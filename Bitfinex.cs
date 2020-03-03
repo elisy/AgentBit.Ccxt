@@ -13,8 +13,6 @@ namespace AgentBit.Ccxt
 {
     public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
     {
-        MemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions());
-
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
 
@@ -65,7 +63,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>("Bitfinex.FetchMarkets", async entry =>
+            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>("Bitfinex.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -126,7 +124,7 @@ namespace AgentBit.Ccxt
 
         public override void Sign(Request request)
         {
-            if (request.ApiType != "private" || request.Method == HttpMethod.Get)
+            if (request.ApiType != "private")
                 return;
         }
 
@@ -181,6 +179,8 @@ namespace AgentBit.Ccxt
             else
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
+
+
 
         public class SymbolDetailsJson
         {

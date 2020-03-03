@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Caching.Memory;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -16,6 +17,9 @@ namespace AgentBit.Ccxt.Base
     /// </summary>
     public class Exchange : IDisposable, IFetchMarkets
     {
+        //thread safe
+        public static MemoryCache MemoryCache = new MemoryCache(new MemoryCacheOptions());
+
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
 
