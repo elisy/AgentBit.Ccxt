@@ -63,7 +63,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>("Bitfinex.FetchMarkets", async entry =>
+            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -104,8 +104,8 @@ namespace AgentBit.Ccxt
                         newItem.BaseId = newItem.Id.Substring(0, 3);
                         newItem.QuoteId = newItem.Id.Substring(3, 3);
                     }
-                    newItem.Base = CommonCurrencyCode(newItem.BaseId);
-                    newItem.Quote = CommonCurrencyCode(newItem.QuoteId);
+                    newItem.Base = GetCommonCurrencyCode(newItem.BaseId);
+                    newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
                     newItem.Symbol = newItem.Base + '/' + newItem.Quote;
 
                     newItem.PricePrecision = market.price_precision;

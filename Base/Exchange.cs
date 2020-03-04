@@ -152,7 +152,7 @@ namespace AgentBit.Ccxt.Base
             throw new NotImplementedException();
         }
 
-        protected string CommonCurrencyCode(string code)
+        protected string GetCommonCurrencyCode(string code)
         {
             if (CommonCurrencies.ContainsKey(code))
                 return CommonCurrencies[code];
