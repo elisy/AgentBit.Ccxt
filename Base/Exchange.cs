@@ -105,11 +105,19 @@ namespace AgentBit.Ccxt.Base
                     message.Headers.Add(header.Key, header.Value);
             }
 
-            HttpResponseMessage response = await HttpClient.SendAsync(message);
-            return await HandleRestResponse(response, request);
+            try
+            { 
+                HttpResponseMessage response = await HttpClient.SendAsync(message);
+                return await HandleResponse(response, request);
+            }
+            catch (WebException e)
+            {
+                throw e;
+            }
+            
         }
 
-        public virtual async Task<Response> HandleRestResponse(HttpResponseMessage response, Request request)
+        public virtual async Task<Response> HandleResponse(HttpResponseMessage response, Request request)
         {
             Response result = new Response()
             {
@@ -117,9 +125,16 @@ namespace AgentBit.Ccxt.Base
                 HttpResponseMessage = response,
                 Text = await response.Content.ReadAsStringAsync()
             };
+            HandleError(result);
             return result;
         }
 
+        public virtual void HandleError(Response response)
+        {
+            if (response.HttpResponseMessage.IsSuccessStatusCode)
+                return;
+            throw new ExchangeError();
+        }
 
         public virtual void Sign(Request request)
         {
