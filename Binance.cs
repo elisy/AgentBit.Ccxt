@@ -45,6 +45,9 @@ namespace AgentBit.Ccxt
 
                 var responseJson = JsonSerializer.Deserialize<ExchangeInfo>(response.Text);
                 var markets = responseJson.symbols;
+
+                var result = new List<Market>();
+
                 foreach (var market in markets)
                 {
                     var newItem = new Market();
@@ -55,21 +58,34 @@ namespace AgentBit.Ccxt
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
                     newItem.Symbol = newItem.Base + "/" + newItem.Quote;
                     newItem.PricePrecision = market.quotePrecision;
+                    newItem.AmountPrecision = market.baseAssetPrecision;
 
-                    //        newItem.quo
-                    //const filters = this.indexBy(market['filters'], 'filterType');
-                    //const precision = {
-                    //    'base': market['baseAssetPrecision'],
-                    //    'quote': market['quotePrecision'],
-                    //    'amount': market['baseAssetPrecision'],
-                    //    'price': market['quotePrecision'],
-                    //};
-                    //const status = this.safeString(market, 'status');
+                    var priceFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "PRICE_FILTER");
+                    if (priceFilter != null)
+                    {
+                        newItem.PriceMin = JsonSerializer.Deserialize<double>(priceFilter["minPrice"].ToString());
+                        newItem.PriceMax = JsonSerializer.Deserialize<double>(priceFilter["maxPrice"].ToString());
+                    }
+
+                    var lotFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "LOT_SIZE");
+                    if (lotFilter != null)
+                    {
+                        newItem.AmountPrecision = Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
+                        newItem.AmountMin = JsonSerializer.Deserialize<double>(lotFilter["minQty"].ToString());
+                        newItem.AmountMax = JsonSerializer.Deserialize<double>(lotFilter["maxQty"].ToString());
+                    }
+
+                    var minNotional = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "MIN_NOTIONAL");
+                    if (minNotional != null)
+                    {
+                        newItem.CostMin = JsonSerializer.Deserialize<double>(minNotional["minNotional"].ToString());
+                    }
+
                     newItem.Active = (market.status == "TRADING");
 
+                    result.Add(newItem);
                 }
 
-                var result = new List<Market>();
                 return result.ToArray();
             });
         }
