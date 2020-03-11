@@ -71,7 +71,7 @@ namespace AgentBit.Ccxt
                     var lotFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "LOT_SIZE");
                     if (lotFilter != null)
                     {
-                        newItem.AmountPrecision = Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
+                        newItem.AmountPrecision = (int)Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
                         newItem.AmountMin = JsonSerializer.Deserialize<double>(lotFilter["minQty"].ToString());
                         newItem.AmountMax = JsonSerializer.Deserialize<double>(lotFilter["maxQty"].ToString());
                     }
