@@ -43,7 +43,7 @@ namespace AgentBit.Ccxt
                     Timeout = TimeSpan.FromSeconds(30)
                 });
 
-                var responseJson = JsonSerializer.Deserialize<ExchangeInfo>(response.Text);
+                var responseJson = JsonSerializer.Deserialize<BinanceExchangeInfo>(response.Text);
                 var markets = responseJson.symbols;
 
                 var result = new List<Market>();
@@ -54,9 +54,10 @@ namespace AgentBit.Ccxt
                     newItem.Id = market.symbol;
                     newItem.BaseId = market.baseAsset;
                     newItem.QuoteId = market.quoteAsset;
+
                     newItem.Base = GetCommonCurrencyCode(newItem.BaseId);
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
-                    newItem.Symbol = newItem.Base + "/" + newItem.Quote;
+
                     newItem.PricePrecision = market.quotePrecision;
                     newItem.AmountPrecision = market.baseAssetPrecision;
 
@@ -152,7 +153,7 @@ namespace AgentBit.Ccxt
                 Timeout = TimeSpan.FromSeconds(30)
             });
 
-            var tickers = JsonSerializer.Deserialize<TickerJson[]>(response.Text);
+            var tickers = JsonSerializer.Deserialize<BinanceTicker[]>(response.Text);
             var result = new List<Ticker>();
 
             foreach (var item in tickers)
@@ -194,7 +195,7 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
-        public class ExchangeInfoSymbol
+        public class BinanceExchangeInfoSymbol
         {
             public string symbol { get; set; }
             public string status { get; set; }
@@ -211,12 +212,12 @@ namespace AgentBit.Ccxt
             public string[] timeInForce { get; set; }
         }
 
-        public class ExchangeInfo
+        public class BinanceExchangeInfo
         {
-            public ExchangeInfoSymbol[] symbols { get; set; }
+            public BinanceExchangeInfoSymbol[] symbols { get; set; }
         }
 
-        public class TickerJson
+        public class BinanceTicker
         {
             //{"symbol":"ETHBTC","priceChange":"-0.00023700","priceChangePercent":"-0.916","weightedAvgPrice":"0.02573788","prevClosePrice":"0.02587900","lastPrice":"0.02564200",
             //"lastQty":"0.36900000","bidPrice":"0.02564100","bidQty":"7.50300000","askPrice":"0.02564300","askQty":"1.39100000","openPrice":"0.02587900","highPrice":"0.02614000","lowPrice":"0.02540900",

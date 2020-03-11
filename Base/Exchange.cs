@@ -58,6 +58,8 @@ namespace AgentBit.Ccxt.Base
             Timeout = TimeSpan.FromSeconds(5);
 
             RateLimit = 2 * 1000;
+
+            CommonCurrencies = new Dictionary<string, string>();
         }
 
         /// <summary>

@@ -48,9 +48,10 @@ namespace AgentBit.Ccxt
                     newItem.BaseId = name[0];
                     newItem.QuoteId = name[1];
                     newItem.Id = newItem.BaseId + "/" + newItem.QuoteId;
+
                     newItem.Base = GetCommonCurrencyCode(newItem.BaseId);
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
-                    newItem.Symbol = newItem.Base + "/" + newItem.Quote;
+
                     newItem.AmountPrecision = market.base_decimals;
                     newItem.PricePrecision = market.counter_decimals;
                     newItem.Active = market.trading == "Enabled";
