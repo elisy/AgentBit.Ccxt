@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -15,7 +16,7 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV2 = new Uri("https://www.bitstamp.net/api/v2/");
 
-        public Bitstamp() : base()
+        public Bitstamp(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             //https://www.bitstamp.net/api/
             //Do not make more than 8000 requests per 10 minutes or we will ban your IP address.
@@ -24,7 +25,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -33,8 +34,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV2,
                     Path = "trading-pairs-info",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var pairs = JsonSerializer.Deserialize<PairsInfo[]>(pairsResponse.Text);
 
@@ -82,8 +82,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiPublicV2,
                 Path = $"ticker/{market.BaseId.ToLower()}{market.QuoteId.ToLower()}/",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(5)
+                Method = HttpMethod.Get
             });
 
             var ticker = JsonSerializer.Deserialize<BitstampTicker>(response.Text);

@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -18,7 +19,7 @@ namespace AgentBit.Ccxt
 
         private int _xMbxUsedWeight = 0;
 
-        public Binance() : base()
+        public Binance(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             //Binance overrides Throttle method to support weighted rate limit
             RateLimit = 1 * 1000;
@@ -30,7 +31,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -39,8 +40,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiV3,
                     Path = "exchangeInfo",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
 
                 var responseJson = JsonSerializer.Deserialize<BinanceExchangeInfo>(response.Text);
@@ -149,8 +149,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiV3,
                 Path = $"ticker/24hr",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(30)
+                Method = HttpMethod.Get
             });
 
             var tickers = JsonSerializer.Deserialize<BinanceTicker[]>(response.Text);

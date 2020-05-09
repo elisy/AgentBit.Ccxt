@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -17,45 +18,20 @@ namespace AgentBit.Ccxt.Base
     /// </summary>
     public class Exchange : IDisposable, IFetchMarkets
     {
-        //thread safe
-        public static MemoryCache MemoryCache = new MemoryCache(new MemoryCacheOptions());
-
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
 
-        public TimeSpan Timeout { get; set; }
-
-        public SocketsHttpHandler SocketsHttpHandler { get; set; }
-
-        protected HttpClient _httpClient = null;
-        public HttpClient HttpClient
-        {
-            get
-            {
-                if (_httpClient == null)
-                {
-                    _httpClient = new HttpClient(SocketsHttpHandler);
-                    _httpClient.Timeout = Timeout;
-
-                    _httpClient.DefaultRequestHeaders.Connection.Clear();
-                    _httpClient.DefaultRequestHeaders.ConnectionClose = false;
-                    _httpClient.DefaultRequestHeaders.Connection.Add("Keep-Alive");
-                }
-
-                return _httpClient;
-            }
-        }
-
         public Dictionary<string, string> CommonCurrencies { get; set; }
 
-        public Exchange()
-        {
-            SocketsHttpHandler = new SocketsHttpHandler();
-            //SocketsHttpHandler.MaxConnectionsPerServer = 5;
-            SocketsHttpHandler.UseCookies = false;
-            SocketsHttpHandler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+        protected HttpClient _httpClient;
+        protected IMemoryCache _memoryCache;
+        protected ILogger _logger;
 
-            Timeout = TimeSpan.FromSeconds(5);
+        public Exchange(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger)
+        {
+            _httpClient = httpClient;
+            _memoryCache = memoryCache;
+            _logger = logger;
 
             RateLimit = 2 * 1000;
 
@@ -109,7 +85,7 @@ namespace AgentBit.Ccxt.Base
 
             try
             { 
-                HttpResponseMessage response = await HttpClient.SendAsync(message);
+                HttpResponseMessage response = await _httpClient.SendAsync(message);
                 return await HandleResponse(response, request);
             }
             catch (WebException e)
@@ -159,8 +135,6 @@ namespace AgentBit.Ccxt.Base
 
         public void Dispose()
         {
-            if (_httpClient != null)
-                _httpClient.Dispose();
         }
 
 

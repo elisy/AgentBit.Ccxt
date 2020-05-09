@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -15,7 +16,7 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
 
-        public Cex() : base()
+        public Cex(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             //https://cex.io/cex-api
             //Please note that CEX.IO API is limited to 600 requests per 10 minutes
@@ -24,7 +25,7 @@ namespace AgentBit.Ccxt
 
         public async Task<CexCurrencyProfilesData> FetchCurrencies()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<CexCurrencyProfilesData>($"{GetType().FullName}.FetchCurrencies", async entry =>
+            return await _memoryCache.GetOrCreateAsync<CexCurrencyProfilesData>($"{GetType().FullName}.FetchCurrencies", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -33,8 +34,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "currency_profile",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var details = JsonSerializer.Deserialize<CexCurrencyProfiles>(detailsResponse.Text);
 
@@ -44,7 +44,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -55,8 +55,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "currency_limits",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var limits = JsonSerializer.Deserialize<CexCurrencyLimits>(limitsResponse.Text);
 
@@ -117,8 +116,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiPublicV1,
                 Path = $"tickers/{String.Join('/', allCurrencies)}",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(5)
+                Method = HttpMethod.Get
             });
             var tickers = JsonSerializer.Deserialize<CexTickers>(response.Text);
 

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -22,7 +23,7 @@ namespace AgentBit.Ccxt
         //Calling the public endpoints at a frequency of 1 per second (or less) would remain within the rate limits, but exceeding this frequency could cause the calls to be rate limited.
         public const int PublicRateLimit = 1 * 1000;
 
-        public Kraken() : base()
+        public Kraken(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             RateLimit = PublicRateLimit; //See Throttle overriden method
 
@@ -58,7 +59,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -67,8 +68,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "AssetPairs",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
 
                 var result = new List<Market>();
@@ -141,8 +141,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiPublicV1,
                 Path = $"Ticker?pair={argument}",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(5)
+                Method = HttpMethod.Get
             });
 
             using (var document = JsonDocument.Parse(response.Text))

@@ -11,7 +11,6 @@ namespace AgentBit.Ccxt.Base
         public Request()
         {
             Method = HttpMethod.Get;
-            Timeout = TimeSpan.FromSeconds(10);
         }
 
         public Uri BaseUri { get; set; }
@@ -19,8 +18,6 @@ namespace AgentBit.Ccxt.Base
         public string ApiType { get; set; }
         public HttpMethod Method { get; set; }
         public HttpRequestHeaders Headers { get; set; }
-
-        public TimeSpan Timeout { get; set; }
 
         public Dictionary<string, string> Params { get; set; }
 

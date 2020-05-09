@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -15,7 +16,7 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
 
-        public Exmo() : base()
+        public Exmo(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             //https://exmo.com/en/news_view?id=1472
             //The maximum number of API requests from one user or one IP address can reach 180 per minute
@@ -24,7 +25,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -33,8 +34,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "pair_settings",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var details = JsonSerializer.Deserialize<Dictionary<string, ExmoPairSettings>>(detailsResponse.Text);
 
@@ -87,8 +87,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiPublicV1,
                 Path = "ticker",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(5)
+                Method = HttpMethod.Get
             });
             var tickers = JsonSerializer.Deserialize<Dictionary<string, ExmoTicker>>(response.Text);
 

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
@@ -16,7 +17,7 @@ namespace AgentBit.Ccxt
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
 
-        public Bitfinex() : base()
+        public Bitfinex(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
         {
             RateLimit = 1500;
 
@@ -63,7 +64,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await Exchange.MemoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
@@ -72,8 +73,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "symbols",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var ids = JsonSerializer.Deserialize<string[]>(idsResponse.Text);
 
@@ -82,8 +82,7 @@ namespace AgentBit.Ccxt
                     BaseUri = ApiPublicV1,
                     Path = "symbols_details",
                     ApiType = "public",
-                    Method = HttpMethod.Get,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Method = HttpMethod.Get
                 });
                 var details = JsonSerializer.Deserialize<BitfinexSymbolDetails[]>(detailsResponse.Text);
 
@@ -142,8 +141,7 @@ namespace AgentBit.Ccxt
             {
                 BaseUri = ApiPublicV1,
                 Path = $"tickers?symbols={symbolsString}",
-                Method = HttpMethod.Get,
-                Timeout = TimeSpan.FromSeconds(30)
+                Method = HttpMethod.Get
             });
             var tickers = JsonSerializer.Deserialize<BitfinexTicker[]>(response.Text);
 
