@@ -46,6 +46,7 @@ namespace AgentBit.Ccxt.Base
         public double CostMin { get; set; }
         public double CostMax { get; set; }
         public object Info { get; set; }
+        public string MarketUrl { get; set; }
 
         public Market()
         {
