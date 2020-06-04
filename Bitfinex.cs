@@ -74,7 +74,7 @@ namespace AgentBit.Ccxt
                     Path = "symbols",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var ids = JsonSerializer.Deserialize<string[]>(idsResponse.Text);
 
                 var detailsResponse = await Request(new Base.Request()
@@ -83,7 +83,7 @@ namespace AgentBit.Ccxt
                     Path = "symbols_details",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var details = JsonSerializer.Deserialize<BitfinexSymbolDetails[]>(detailsResponse.Text);
 
                 var result = new List<Market>();
@@ -117,7 +117,7 @@ namespace AgentBit.Ccxt
                 }
 
                 return result.ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
         public override void Sign(Request request)
@@ -128,12 +128,12 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            return (await FetchTickers(new string[] { symbol })).FirstOrDefault();
+            return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets();
+            var markets = await FetchMarkets().ConfigureAwait(false);
 
             var symbolsString = symbols == null ? "ALL" : String.Join(',', markets.Where(m => symbols.Contains(m.Symbol)).Select(m => "t" + m.Id));
 
@@ -142,7 +142,7 @@ namespace AgentBit.Ccxt
                 BaseUri = ApiPublicV1,
                 Path = $"tickers?symbols={symbolsString}",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
             var tickers = JsonSerializer.Deserialize<BitfinexTicker[]>(response.Text);
 
             var result = new List<Ticker>();
@@ -154,7 +154,7 @@ namespace AgentBit.Ccxt
                 ticker.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<double>(item.timestamp) * 1000);
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
 
-                var market = (await FetchMarkets()).FirstOrDefault(m => m.Id == item.pair);
+                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.pair);
                 if (market == null)
                     continue;
                 

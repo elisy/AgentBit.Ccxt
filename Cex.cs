@@ -35,11 +35,11 @@ namespace AgentBit.Ccxt
                     Path = "currency_profile",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var details = JsonSerializer.Deserialize<CexCurrencyProfiles>(detailsResponse.Text);
 
                 return details.data;
-            });
+            }).ConfigureAwait(false);
         }
 
         public override async Task<Market[]> FetchMarkets()
@@ -48,7 +48,7 @@ namespace AgentBit.Ccxt
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
-                var currencies = await FetchCurrencies();
+                var currencies = await FetchCurrencies().ConfigureAwait(false);
 
                 var limitsResponse = await Request(new Base.Request()
                 {
@@ -56,7 +56,7 @@ namespace AgentBit.Ccxt
                     Path = "currency_limits",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var limits = JsonSerializer.Deserialize<CexCurrencyLimits>(limitsResponse.Text);
 
                 return (from market in limits.data.First().Value
@@ -90,7 +90,7 @@ namespace AgentBit.Ccxt
 
                             Info = new {market, pair, baseCurrency, quoteCurrency}
                         }).ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
         public override void Sign(Request request)
@@ -101,12 +101,12 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            return (await FetchTickers(new string[] { symbol })).FirstOrDefault();
+            return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets();
+            var markets = await FetchMarkets().ConfigureAwait(false);
 
             var allCurrencies = from market in markets
                                 group market by market.Quote into g
@@ -117,7 +117,7 @@ namespace AgentBit.Ccxt
                 BaseUri = ApiPublicV1,
                 Path = $"tickers/{String.Join('/', allCurrencies)}",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
             var tickers = JsonSerializer.Deserialize<CexTickers>(response.Text);
 
             var result = new List<Ticker>();

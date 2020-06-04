@@ -52,10 +52,10 @@ namespace AgentBit.Ccxt.Base
             var delay = (int)(RateLimit - (DateTime.Now - _lastRequestTime).TotalMilliseconds);
             if (delay > 0)
             {
-                await _throttleSemaphore.WaitAsync();
+                await _throttleSemaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {
-                    await Task.Delay(delay);
+                    await Task.Delay(delay).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -66,7 +66,7 @@ namespace AgentBit.Ccxt.Base
 
         public virtual async Task<Response> Request(Request request)
         {
-            await Throttle();
+            await Throttle().ConfigureAwait(false);
 
             Sign(request);
             SetBody(request);
@@ -85,8 +85,8 @@ namespace AgentBit.Ccxt.Base
 
             try
             { 
-                HttpResponseMessage response = await _httpClient.SendAsync(message);
-                return await HandleResponse(response, request);
+                HttpResponseMessage response = await _httpClient.SendAsync(message).ConfigureAwait(false);
+                return await HandleResponse(response, request).ConfigureAwait(false);
             }
             catch (WebException e)
             {
@@ -101,7 +101,7 @@ namespace AgentBit.Ccxt.Base
             {
                 Request = request,
                 HttpResponseMessage = response,
-                Text = await response.Content.ReadAsStringAsync()
+                Text = await response.Content.ReadAsStringAsync().ConfigureAwait(false)
             };
             HandleError(result);
             return result;

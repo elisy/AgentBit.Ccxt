@@ -36,10 +36,10 @@ namespace AgentBit.Ccxt
         public override async Task Throttle()
         {
             var delay = RateLimit;
-            await _throttleSemaphore.WaitAsync();
+            await _throttleSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                await Task.Delay(delay);
+                await Task.Delay(delay).ConfigureAwait(false);
             }
             finally
             {
@@ -54,7 +54,7 @@ namespace AgentBit.Ccxt
             else
                 RateLimit = PrivateRateLimit;
 
-            return await base.Request(request);
+            return await base.Request(request).ConfigureAwait(false);
         }
 
         public override async Task<Market[]> FetchMarkets()
@@ -69,7 +69,7 @@ namespace AgentBit.Ccxt
                     Path = "AssetPairs",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
 
                 var result = new List<Market>();
 
@@ -117,7 +117,7 @@ namespace AgentBit.Ccxt
                 }
 
                 return result.ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
         public override void Sign(Request request)
@@ -128,12 +128,12 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            return (await FetchTickers(new string[] { symbol })).FirstOrDefault();
+            return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets();
+            var markets = await FetchMarkets().ConfigureAwait(false);
 
             var argument = String.Join(',', markets.Where(market => symbols == null || symbols.Contains(market.Symbol)).Select(market => market.Id));
 
@@ -142,7 +142,7 @@ namespace AgentBit.Ccxt
                 BaseUri = ApiPublicV1,
                 Path = $"Ticker?pair={argument}",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
 
             using (var document = JsonDocument.Parse(response.Text))
             {
@@ -152,7 +152,7 @@ namespace AgentBit.Ccxt
                 var result = new List<Ticker>();
                 foreach (var item in tickers)
                 {
-                    var market = (await FetchMarkets()).FirstOrDefault(m => m.Id == item.Key);
+                    var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.Key);
                     if (market == null)
                         continue;
 

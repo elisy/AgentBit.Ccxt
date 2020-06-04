@@ -35,7 +35,7 @@ namespace AgentBit.Ccxt
                     Path = "trading-pairs-info",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var pairs = JsonSerializer.Deserialize<PairsInfo[]>(pairsResponse.Text);
 
                 var result = new List<Market>();
@@ -63,7 +63,7 @@ namespace AgentBit.Ccxt
                 }
 
                 return result.ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
         public override void Sign(Request request)
@@ -74,7 +74,7 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            var market = (await FetchMarkets()).FirstOrDefault(m => m.Symbol == symbol);
+            var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Symbol == symbol);
             if (market == null)
                 return null;
 
@@ -83,7 +83,7 @@ namespace AgentBit.Ccxt
                 BaseUri = ApiPublicV2,
                 Path = $"ticker/{market.BaseId.ToLower()}{market.QuoteId.ToLower()}/",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
 
             var ticker = JsonSerializer.Deserialize<BitstampTicker>(response.Text);
             
@@ -109,10 +109,10 @@ namespace AgentBit.Ccxt
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
             if (symbols == null)
-                symbols = (await FetchMarkets()).Select(m => m.Symbol).ToArray();
+                symbols = (await FetchMarkets().ConfigureAwait(false)).Select(m => m.Symbol).ToArray();
             var result = new List<Ticker>(symbols.Length);
             foreach (var symbol in symbols)
-                result.Add(await FetchTicker(symbol));
+                result.Add(await FetchTicker(symbol).ConfigureAwait(false));
             return result.ToArray();
         }
 

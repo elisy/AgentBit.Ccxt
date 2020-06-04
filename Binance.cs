@@ -41,7 +41,7 @@ namespace AgentBit.Ccxt
                     Path = "exchangeInfo",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
 
                 var responseJson = JsonSerializer.Deserialize<BinanceExchangeInfo>(response.Text);
                 var markets = responseJson.symbols;
@@ -88,7 +88,7 @@ namespace AgentBit.Ccxt
                 }
 
                 return result.ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
 
@@ -104,10 +104,10 @@ namespace AgentBit.Ccxt
             var delay = RateLimit;
             if (_xMbxUsedWeight > 1000)
             {
-                await _throttleSemaphore.WaitAsync();
+                await _throttleSemaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {
-                    await Task.Delay(delay);
+                    await Task.Delay(delay).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -119,7 +119,7 @@ namespace AgentBit.Ccxt
 
         public override async Task<Response> Request(Request request)
         {
-            var result = await base.Request(request);
+            var result = await base.Request(request).ConfigureAwait(false);
 
             IEnumerable<string> values;
             if (result.HttpResponseMessage.Headers.TryGetValues("X-MBX-USED-WEIGHT", out values))
@@ -138,19 +138,19 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            return (await FetchTickers(new string[] { symbol })).FirstOrDefault();
+            return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets();
+            var markets = await FetchMarkets().ConfigureAwait(false);
 
             var response = await Request(new Base.Request()
             {
                 BaseUri = ApiV3,
                 Path = $"ticker/24hr",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
 
             var tickers = JsonSerializer.Deserialize<BinanceTicker[]>(response.Text);
             var result = new List<Ticker>();
@@ -163,7 +163,7 @@ namespace AgentBit.Ccxt
                 ticker.Timestamp = item.closeTime;
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
 
-                var market = (await FetchMarkets()).FirstOrDefault(m => m.Id == item.symbol);
+                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.symbol);
                 if (market == null)
                     continue;
 

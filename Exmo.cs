@@ -35,7 +35,7 @@ namespace AgentBit.Ccxt
                     Path = "pair_settings",
                     ApiType = "public",
                     Method = HttpMethod.Get
-                });
+                }).ConfigureAwait(false);
                 var details = JsonSerializer.Deserialize<Dictionary<string, ExmoPairSettings>>(detailsResponse.Text);
 
                 var result = new List<Market>();
@@ -65,7 +65,7 @@ namespace AgentBit.Ccxt
                 }
 
                 return result.ToArray();
-            });
+            }).ConfigureAwait(false);
         }
 
         public override void Sign(Request request)
@@ -76,25 +76,25 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
-            return (await FetchTickers(new string[] { symbol })).FirstOrDefault();
+            return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets();
+            var markets = await FetchMarkets().ConfigureAwait(false);
 
             var response = await Request(new Base.Request()
             {
                 BaseUri = ApiPublicV1,
                 Path = "ticker",
                 Method = HttpMethod.Get
-            });
+            }).ConfigureAwait(false);
             var tickers = JsonSerializer.Deserialize<Dictionary<string, ExmoTicker>>(response.Text);
 
             var result = new List<Ticker>();
             foreach (var item in tickers)
             {
-                var market = (await FetchMarkets()).FirstOrDefault(m => m.Id == item.Key);
+                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.Key);
                 if (market == null)
                     continue;
 
