@@ -84,7 +84,8 @@ namespace AgentBit.Ccxt.Base
             }
 
             try
-            { 
+            {
+                _lastRequestTime = DateTime.Now;
                 HttpResponseMessage response = await _httpClient.SendAsync(message).ConfigureAwait(false);
                 return await HandleResponse(response, request).ConfigureAwait(false);
             }
