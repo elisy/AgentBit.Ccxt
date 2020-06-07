@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -23,7 +22,7 @@ namespace AgentBit.Ccxt
         //Calling the public endpoints at a frequency of 1 per second (or less) would remain within the rate limits, but exceeding this frequency could cause the calls to be rate limited.
         public const int PublicRateLimit = 1 * 1000;
 
-        public Kraken(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Kraken(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             RateLimit = PublicRateLimit; //See Throttle overriden method
 
@@ -59,10 +58,8 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var response = await Request(new Base.Request()
                 {
                     BaseUri = ApiPublicV1,
@@ -116,8 +113,9 @@ namespace AgentBit.Ccxt
                     }
                 }
 
-                return result.ToArray();
-            }).ConfigureAwait(false);
+                _markets = result.ToArray();
+            }
+            return _markets;
         }
 
         public override void Sign(Request request)

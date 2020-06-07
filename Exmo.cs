@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -16,7 +15,7 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
 
-        public Exmo(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Exmo(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //https://exmo.com/en/news_view?id=1472
             //The maximum number of API requests from one user or one IP address can reach 180 per minute
@@ -25,10 +24,8 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var detailsResponse = await Request(new Base.Request()
                 {
                     BaseUri = ApiPublicV1,
@@ -64,8 +61,9 @@ namespace AgentBit.Ccxt
                     result.Add(newItem);
                 }
 
-                return result.ToArray();
-            }).ConfigureAwait(false);
+                _markets = result.ToArray();
+            }
+            return _markets;
         }
 
         public override void Sign(Request request)

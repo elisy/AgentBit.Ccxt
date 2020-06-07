@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -16,38 +15,31 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
 
-        public Cex(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Cex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //https://cex.io/cex-api
             //Please note that CEX.IO API is limited to 600 requests per 10 minutes
-            RateLimit = (int) 10 * 60 / 600 * 1000;
+            RateLimit = (int)10 * 60 / 600 * 1000;
         }
 
         public async Task<CexCurrencyProfilesData> FetchCurrencies()
         {
-            return await _memoryCache.GetOrCreateAsync<CexCurrencyProfilesData>($"{GetType().FullName}.FetchCurrencies", async entry =>
+            var detailsResponse = await Request(new Base.Request()
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
-                var detailsResponse = await Request(new Base.Request()
-                {
-                    BaseUri = ApiPublicV1,
-                    Path = "currency_profile",
-                    ApiType = "public",
-                    Method = HttpMethod.Get
-                }).ConfigureAwait(false);
-                var details = JsonSerializer.Deserialize<CexCurrencyProfiles>(detailsResponse.Text);
-
-                return details.data;
+                BaseUri = ApiPublicV1,
+                Path = "currency_profile",
+                ApiType = "public",
+                Method = HttpMethod.Get
             }).ConfigureAwait(false);
+            var details = JsonSerializer.Deserialize<CexCurrencyProfiles>(detailsResponse.Text);
+
+            return details.data;
         }
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var currencies = await FetchCurrencies().ConfigureAwait(false);
 
                 var limitsResponse = await Request(new Base.Request()
@@ -59,38 +51,39 @@ namespace AgentBit.Ccxt
                 }).ConfigureAwait(false);
                 var limits = JsonSerializer.Deserialize<CexCurrencyLimits>(limitsResponse.Text);
 
-                return (from market in limits.data.First().Value
-                        join pairRecord in currencies.pairs on $"{market.symbol1}/{market.symbol2}" equals $"{pairRecord.symbol1}/{pairRecord.symbol2}" into pairJoin
-                        let pair = pairJoin.FirstOrDefault()
-                        join baseCurrencyRecord in currencies.symbols on market.symbol1 equals baseCurrencyRecord.code into baseCurrencyJoin
-                        let baseCurrency = baseCurrencyJoin.FirstOrDefault()
-                        join quoteCurrencyRecord in currencies.symbols on market.symbol2 equals quoteCurrencyRecord.code into quoteCurrencyJoin
-                        let quoteCurrency = quoteCurrencyJoin.FirstOrDefault()
-                        where baseCurrency != null
-                        where quoteCurrency != null
-                        let amountPrecision = baseCurrency.precision - baseCurrency.scale
-                        select new Market()
-                        {
-                            BaseId = market.symbol1,
-                            QuoteId = market.symbol2,
-                            Id = $"{market.symbol1}/{market.symbol2}",
-                            Base = GetCommonCurrencyCode(market.symbol1),
-                            Quote = GetCommonCurrencyCode(market.symbol2),
+                _markets = (from market in limits.data.First().Value
+                            join pairRecord in currencies.pairs on $"{market.symbol1}/{market.symbol2}" equals $"{pairRecord.symbol1}/{pairRecord.symbol2}" into pairJoin
+                            let pair = pairJoin.FirstOrDefault()
+                            join baseCurrencyRecord in currencies.symbols on market.symbol1 equals baseCurrencyRecord.code into baseCurrencyJoin
+                            let baseCurrency = baseCurrencyJoin.FirstOrDefault()
+                            join quoteCurrencyRecord in currencies.symbols on market.symbol2 equals quoteCurrencyRecord.code into quoteCurrencyJoin
+                            let quoteCurrency = quoteCurrencyJoin.FirstOrDefault()
+                            where baseCurrency != null
+                            where quoteCurrency != null
+                            let amountPrecision = baseCurrency.precision - baseCurrency.scale
+                            select new Market()
+                            {
+                                BaseId = market.symbol1,
+                                QuoteId = market.symbol2,
+                                Id = $"{market.symbol1}/{market.symbol2}",
+                                Base = GetCommonCurrencyCode(market.symbol1),
+                                Quote = GetCommonCurrencyCode(market.symbol2),
 
-                            PricePrecision = pair == null ? quoteCurrency.precision : pair.pricePrecision,
-                            AmountPrecision = amountPrecision,
-                            
-                            AmountMin = market.minLotSize,
-                            AmountMax = market.maxLotSize.HasValue ? market.maxLotSize.Value : double.MaxValue,
+                                PricePrecision = pair == null ? quoteCurrency.precision : pair.pricePrecision,
+                                AmountPrecision = amountPrecision,
 
-                            PriceMin = JsonSerializer.Deserialize<double>(market.minPrice),
-                            PriceMax = JsonSerializer.Deserialize<double>(market.maxPrice),
+                                AmountMin = market.minLotSize,
+                                AmountMax = market.maxLotSize.HasValue ? market.maxLotSize.Value : double.MaxValue,
 
-                            CostMin = market.minLotSizeS2,
+                                PriceMin = JsonSerializer.Deserialize<double>(market.minPrice),
+                                PriceMax = JsonSerializer.Deserialize<double>(market.maxPrice),
 
-                            Info = new {market, pair, baseCurrency, quoteCurrency}
-                        }).ToArray();
-            }).ConfigureAwait(false);
+                                CostMin = market.minLotSizeS2,
+
+                                Info = new { market, pair, baseCurrency, quoteCurrency }
+                            }).ToArray();
+            }
+            return _markets;
         }
 
         public override void Sign(Request request)

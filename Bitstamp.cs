@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -16,7 +15,7 @@ namespace AgentBit.Ccxt
     {
         readonly Uri ApiPublicV2 = new Uri("https://www.bitstamp.net/api/v2/");
 
-        public Bitstamp(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Bitstamp(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //https://www.bitstamp.net/api/
             //Do not make more than 8000 requests per 10 minutes or we will ban your IP address.
@@ -25,10 +24,8 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var pairsResponse = await Request(new Base.Request()
                 {
                     BaseUri = ApiPublicV2,
@@ -62,8 +59,9 @@ namespace AgentBit.Ccxt
                     result.Add(newItem);
                 }
 
-                return result.ToArray();
-            }).ConfigureAwait(false);
+                _markets = result.ToArray();
+            }
+            return _markets;
         }
 
         public override void Sign(Request request)

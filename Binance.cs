@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -19,7 +18,7 @@ namespace AgentBit.Ccxt
 
         private int _xMbxUsedWeight = 0;
 
-        public Binance(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Binance(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //Binance overrides Throttle method to support weighted rate limit
             RateLimit = 1 * 1000;
@@ -31,10 +30,8 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var response = await Request(new Base.Request()
                 {
                     BaseUri = ApiV3,
@@ -87,8 +84,9 @@ namespace AgentBit.Ccxt
                     result.Add(newItem);
                 }
 
-                return result.ToArray();
-            }).ConfigureAwait(false);
+                _markets = result.ToArray();
+            }
+            return _markets;
         }
 
 

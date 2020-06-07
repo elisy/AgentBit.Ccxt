@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -24,14 +23,15 @@ namespace AgentBit.Ccxt.Base
         public Dictionary<string, string> CommonCurrencies { get; set; }
 
         protected HttpClient _httpClient;
-        protected IMemoryCache _memoryCache;
+        protected Market[] _markets;
         protected ILogger _logger;
 
-        public Exchange(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger)
+        public Exchange(HttpClient httpClient, ILogger logger)
         {
             _httpClient = httpClient;
-            _memoryCache = memoryCache;
             _logger = logger;
+
+            _markets = null;
 
             RateLimit = 2 * 1000;
 

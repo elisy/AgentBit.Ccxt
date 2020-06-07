@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AgentBit.Ccxt.Base;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
@@ -17,7 +16,7 @@ namespace AgentBit.Ccxt
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
 
-        public Bitfinex(HttpClient httpClient, IMemoryCache memoryCache, ILogger logger) : base(httpClient, memoryCache, logger)
+        public Bitfinex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             RateLimit = 1500;
 
@@ -64,10 +63,8 @@ namespace AgentBit.Ccxt
 
         public override async Task<Market[]> FetchMarkets()
         {
-            return await _memoryCache.GetOrCreateAsync<Market[]>($"{GetType().FullName}.FetchMarkets", async entry =>
+            if (_markets == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
                 var idsResponse = await Request(new Base.Request()
                 {
                     BaseUri = ApiPublicV1,
@@ -116,8 +113,9 @@ namespace AgentBit.Ccxt
                     result.Add(newItem);
                 }
 
-                return result.ToArray();
-            }).ConfigureAwait(false);
+                _markets = result.ToArray();
+            }
+            return _markets;
         }
 
         public override void Sign(Request request)
