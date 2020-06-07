@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -108,9 +109,16 @@ namespace AgentBit.Ccxt
         {
             if (symbols == null)
                 symbols = (await FetchMarkets().ConfigureAwait(false)).Select(m => m.Symbol).ToArray();
-            var result = new List<Ticker>(symbols.Length);
-            foreach (var symbol in symbols)
+
+            //var result = new List<Ticker>(symbols.Length);
+            //foreach (var symbol in symbols)
+            //    result.Add(await FetchTicker(symbol).ConfigureAwait(false));
+            //return result.ToArray();
+            var result = new ConcurrentBag<Ticker>();
+            var tasks = symbols.Select(async symbol => {
                 result.Add(await FetchTicker(symbol).ConfigureAwait(false));
+            }).ToArray();
+            await Task.WhenAll(tasks);
             return result.ToArray();
         }
 
