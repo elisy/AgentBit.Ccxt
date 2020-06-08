@@ -52,6 +52,7 @@ namespace AgentBit.Ccxt.Base
             var delay = (int)(RateLimit - (DateTime.Now - _lastRequestTime).TotalMilliseconds);
             if (delay > 0)
             {
+                _logger.LogInformation($"Throttle {this.GetType().Name} {delay}ms");
                 await _throttleSemaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {

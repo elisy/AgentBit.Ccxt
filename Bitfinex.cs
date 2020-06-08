@@ -18,7 +18,10 @@ namespace AgentBit.Ccxt
 
         public Bitfinex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
-            RateLimit = 1500;
+            //https://bitcoin.stackexchange.com/questions/36952/bitfinex-api-limit
+            //The limit is measured per IP address and per account. So for one account (regardless of the number of key/secret pairs) 
+            //60 requests per minute can be made via our API.
+            RateLimit = 60 / 60 * 1000;
 
             CommonCurrencies = new Dictionary<string, string>() {
                 { "ABS", "ABYSS" },
