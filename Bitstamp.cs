@@ -89,7 +89,7 @@ namespace AgentBit.Ccxt
             var result = new Ticker();
             result.Symbol = market.Symbol;
             result.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<double>(ticker.timestamp));
-            result.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(result.Timestamp);
+            result.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(result.Timestamp);
             result.High = JsonSerializer.Deserialize<double>(ticker.high);
             result.Low = JsonSerializer.Deserialize<double>(ticker.low);
             result.Bid = JsonSerializer.Deserialize<double>(ticker.bid);
