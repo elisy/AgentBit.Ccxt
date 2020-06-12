@@ -47,7 +47,7 @@ namespace AgentBit.Ccxt.Base
         public double CostMax { get; set; }
 
         /// <summary>
-        /// Default max makert fee rate, 0.0016 = 0.16%
+        /// Default max maker fee rate, 0.0016 = 0.16%
         /// </summary>
         public double FeeMaker { get; set; }
         /// <summary>
