@@ -58,6 +58,9 @@ namespace AgentBit.Ccxt
                     newItem.PricePrecision = 8;
                     newItem.AmountPrecision = 8;
 
+                    newItem.FeeTaker = 0.4 / 100;
+                    newItem.FeeMaker = 0.4 / 100;
+
                     result.Add(newItem);
                 }
 

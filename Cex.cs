@@ -80,6 +80,9 @@ namespace AgentBit.Ccxt
 
                                 CostMin = market.minLotSizeS2,
 
+                                FeeMaker = 0.16 / 100,
+                                FeeTaker = 0.25 / 100,
+
                                 Info = new { market, pair, baseCurrency, quoteCurrency }
                             }).ToArray();
             }

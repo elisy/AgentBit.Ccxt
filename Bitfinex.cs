@@ -113,6 +113,9 @@ namespace AgentBit.Ccxt
                     newItem.PriceMax = Math.Pow(10, newItem.PricePrecision);
                     newItem.CostMin = newItem.AmountMin * newItem.PriceMin;
 
+                    newItem.FeeMaker = 0.1 / 100;
+                    newItem.FeeTaker = 0.2 / 100;
+
                     result.Add(newItem);
                 }
 

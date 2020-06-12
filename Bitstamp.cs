@@ -57,6 +57,9 @@ namespace AgentBit.Ccxt
                     var parts = market.minimum_order.Split(' ');
                     newItem.CostMin = JsonSerializer.Deserialize<double>(parts[0]);
 
+                    newItem.FeeMaker = 0.5 / 100;
+                    newItem.FeeTaker = 0.5 / 100;
+
                     result.Add(newItem);
                 }
 

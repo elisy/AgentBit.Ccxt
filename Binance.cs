@@ -81,6 +81,9 @@ namespace AgentBit.Ccxt
 
                     newItem.Active = (market.status == "TRADING");
 
+                    newItem.FeeMaker = 0.1 / 100;
+                    newItem.FeeTaker = 0.1 / 100;
+
                     result.Add(newItem);
                 }
 
