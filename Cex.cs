@@ -83,6 +83,8 @@ namespace AgentBit.Ccxt
                                 FeeMaker = 0.16 / 100,
                                 FeeTaker = 0.25 / 100,
 
+                                Url = $"https://cex.io/trade/{market.symbol1}-{market.symbol2}",
+
                                 Info = new { market, pair, baseCurrency, quoteCurrency }
                             }).ToArray();
             }

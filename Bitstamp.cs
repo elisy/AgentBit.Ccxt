@@ -60,6 +60,8 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.5 / 100;
                     newItem.FeeTaker = 0.5 / 100;
 
+                    newItem.Url = $"https://www.bitstamp.net/markets/{newItem.BaseId}/{newItem.QuoteId}/";
+
                     result.Add(newItem);
                 }
 

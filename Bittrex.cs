@@ -62,6 +62,8 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.2 / 100;
                     newItem.FeeTaker = 0.2 / 100;
 
+                    newItem.Url = $"https://global.bittrex.com/Market/Index?MarketName={newItem.QuoteId}-{newItem.BaseId}";
+
                     newItem.Info = market;
 
                     result.Add(newItem);

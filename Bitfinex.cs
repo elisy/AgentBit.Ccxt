@@ -116,6 +116,8 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.1 / 100;
                     newItem.FeeTaker = 0.2 / 100;
 
+                    newItem.Url = $"https://www.bitfinex.com/t/{newItem.BaseId}:{newItem.QuoteId}?refcode=BbA2Zpxdo";
+
                     result.Add(newItem);
                 }
 

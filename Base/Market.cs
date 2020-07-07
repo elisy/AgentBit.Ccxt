@@ -56,7 +56,7 @@ namespace AgentBit.Ccxt.Base
         public double FeeTaker { get; set; }
 
         public object Info { get; set; }
-        public string MarketUrl { get; set; }
+        public string Url { get; set; }
 
         public Market()
         {

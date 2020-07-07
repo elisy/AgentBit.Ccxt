@@ -112,6 +112,8 @@ namespace AgentBit.Ccxt
                         newItem.FeeTaker = 0.26 / 100;
                         newItem.FeeMaker = 0.16 / 100;
 
+                        newItem.Url = $"https://trade.kraken.com/ru-ru/charts/KRAKEN:{newItem.BaseId}-{newItem.QuoteId}";
+
                         result.Add(newItem);
                     }
                 }
