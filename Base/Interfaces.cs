@@ -45,8 +45,9 @@ namespace AgentBit.Ccxt.Base
     {
     }
 
-    public interface IFetchBalance
+    public interface IFetchBalance : IPrivateAPI
     {
+        public Task<Dictionary<string, BalanceAccount>> FetchBalance();
     }
 
     public interface IFetchBidsAsks

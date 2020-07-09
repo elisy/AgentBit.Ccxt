@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
+    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
@@ -130,6 +131,21 @@ namespace AgentBit.Ccxt
         {
             if (request.ApiType != "private")
                 return;
+
+            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+            string jsonString = JsonSerializer.Serialize(request.Params);
+            string json64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString));
+            byte[] data = Encoding.UTF8.GetBytes(json64);
+            var encoding = new ASCIIEncoding();
+            var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
+            byte[] hash = hashMaker.ComputeHash(data);
+            string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+            //HttpWebRequest request = CreateJsonRequest("https://api.bitfinex.com" + apiPath, timeout, null);
+            request.Headers.Add("X-BFX-APIKEY", ApiKey);
+            request.Headers.Add("X-BFX-PAYLOAD", json64);
+            request.Headers.Add("X-BFX-SIGNATURE", signature);
         }
 
         public async Task<Ticker> FetchTicker(string symbol)
@@ -183,7 +199,18 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                BaseUri = ApiPublicV1,
+                Path = $"balances",
+                Method = HttpMethod.Post
+            }).ConfigureAwait(false);
+            var tickers = JsonSerializer.Deserialize<BitfinexTicker[]>(response.Text);
 
+            throw new NotImplementedException();
+        }
 
         public class BitfinexSymbolDetails
         {
