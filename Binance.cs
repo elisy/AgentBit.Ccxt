@@ -3,16 +3,18 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Web;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
+    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiV3 = new Uri("https://api.binance.com/api/v3/");
 
@@ -132,13 +134,6 @@ namespace AgentBit.Ccxt
         }
 
 
-        public override void Sign(Request request)
-        {
-            if (request.ApiType != "private")
-                return;
-        }
-
-
         public async Task<Ticker> FetchTicker(string symbol)
         {
             return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
@@ -195,6 +190,62 @@ namespace AgentBit.Ccxt
                 return result.ToArray();
             else
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
+        }
+
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+
+            request.Headers.Add("X-MBX-APIKEY", ApiKey);
+
+            var uri = new Uri(request.BaseUri, request.Path);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            query.Add("timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture));
+            query.Add("recvWindow", "5000");
+            query.Add("signature", HmacSha256(query.ToString(), ApiSecret));
+            request.Path = $"{uri.LocalPath}?{query.ToString()}";
+        }
+
+
+        private string HmacSha256(string text, string key)
+        {
+            ASCIIEncoding encoding = new ASCIIEncoding();
+
+            Byte[] textBytes = encoding.GetBytes(text);
+            Byte[] keyBytes = encoding.GetBytes(key);
+
+            Byte[] hashBytes;
+
+            using (HMACSHA256 hash = new HMACSHA256(keyBytes))
+                hashBytes = hash.ComputeHash(textBytes);
+
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiV3,
+                Path = "account",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+
+            var json = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response.Text);
+
+            var result = new Dictionary<string, BalanceAccount>();
+            foreach (var item in json["balances"].EnumerateArray())
+            {
+                //{"asset":"LTC","free":"0.01975000","locked":"0.00000000"}
+                result[GetCommonCurrencyCode(item.GetProperty("asset").GetString().ToUpper())] = new BalanceAccount()
+                {
+                    Free = JsonSerializer.Deserialize<double>(item.GetProperty("free").ToString()),
+                    Total = JsonSerializer.Deserialize<double>(item.GetProperty("free").ToString()) + JsonSerializer.Deserialize<double>(item.GetProperty("locked").ToString())
+                };
+            }
+            return result;
         }
 
         public class BinanceExchangeInfoSymbol

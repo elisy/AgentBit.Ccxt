@@ -69,13 +69,13 @@ namespace AgentBit.Ccxt.Base
         {
             HttpRequestMessage message = new HttpRequestMessage()
             {
-                RequestUri = new Uri(request.BaseUri, request.Path),
             };
             request.Headers = message.Headers;
 
             Sign(request);
             SetBody(request);
 
+            message.RequestUri = new Uri(request.BaseUri, request.Path);
             message.Method = request.Method;
             message.Content = request.Body;
 
