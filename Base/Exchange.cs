@@ -67,23 +67,25 @@ namespace AgentBit.Ccxt.Base
 
         public virtual async Task<Response> Request(Request request)
         {
-            await Throttle().ConfigureAwait(false);
+            HttpRequestMessage message = new HttpRequestMessage()
+            {
+                RequestUri = new Uri(request.BaseUri, request.Path),
+            };
+            request.Headers = message.Headers;
 
             Sign(request);
             SetBody(request);
 
-            HttpRequestMessage message = new HttpRequestMessage()
-            {
-                RequestUri = new Uri(request.BaseUri, request.Path),
-                Method = request.Method,
-                Content = request.Body
-            };
-            if (request.Headers != null)
-            {
-                foreach (var header in request.Headers)
-                    message.Headers.Add(header.Key, header.Value);
-            }
+            message.Method = request.Method;
+            message.Content = request.Body;
 
+            //if (request.Headers != null)
+            //{
+            //    foreach (var header in request.Headers)
+            //        message.Headers.Add(header.Key, header.Value);
+            //}
+
+            await Throttle().ConfigureAwait(false);
             try
             {
                 _lastRequestTime = DateTime.Now;

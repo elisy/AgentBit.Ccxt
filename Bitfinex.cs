@@ -17,6 +17,8 @@ namespace AgentBit.Ccxt
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
 
+        readonly Uri ApiPrivateV1 = new Uri("https://api.bitfinex.com");
+
         public Bitfinex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //https://bitcoin.stackexchange.com/questions/36952/bitfinex-api-limit
@@ -127,27 +129,6 @@ namespace AgentBit.Ccxt
             return _markets;
         }
 
-        public override void Sign(Request request)
-        {
-            if (request.ApiType != "private")
-                return;
-
-            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-
-            string jsonString = JsonSerializer.Serialize(request.Params);
-            string json64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString));
-            byte[] data = Encoding.UTF8.GetBytes(json64);
-            var encoding = new ASCIIEncoding();
-            var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
-            byte[] hash = hashMaker.ComputeHash(data);
-            string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
-
-            //HttpWebRequest request = CreateJsonRequest("https://api.bitfinex.com" + apiPath, timeout, null);
-            request.Headers.Add("X-BFX-APIKEY", ApiKey);
-            request.Headers.Add("X-BFX-PAYLOAD", json64);
-            request.Headers.Add("X-BFX-SIGNATURE", signature);
-        }
-
         public async Task<Ticker> FetchTicker(string symbol)
         {
             return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
@@ -199,17 +180,58 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+
+            request.Params["request"] = request.Path;
+            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+            string jsonString = JsonSerializer.Serialize(request.Params);
+            string json64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString));
+            byte[] data = Encoding.UTF8.GetBytes(json64);
+            var encoding = new ASCIIEncoding();
+            var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
+            byte[] hash = hashMaker.ComputeHash(data);
+            string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+            //HttpWebRequest request = CreateJsonRequest("https://api.bitfinex.com" + apiPath, timeout, null);
+            request.Headers.Add("X-BFX-APIKEY", ApiKey);
+            request.Headers.Add("X-BFX-PAYLOAD", json64);
+            request.Headers.Add("X-BFX-SIGNATURE", signature);
+        }
+
         public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
         {
             var response = await Request(new Base.Request()
             {
-                BaseUri = ApiPublicV1,
-                Path = $"balances",
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = "/v1/balances",
                 Method = HttpMethod.Post
             }).ConfigureAwait(false);
-            var tickers = JsonSerializer.Deserialize<BitfinexTicker[]>(response.Text);
+            var balances = JsonSerializer.Deserialize<BitfinexBalance[]>(response.Text);
 
-            throw new NotImplementedException();
+            var result = new Dictionary<string, BalanceAccount>();
+            foreach(var balance in balances.Where(m => m.type == "exchange"))
+            {
+                result[GetCommonCurrencyCode(balance.currency.ToUpper())] = new BalanceAccount() 
+                {
+                    Free = JsonSerializer.Deserialize<double>(balance.available),
+                    Total = JsonSerializer.Deserialize<double>(balance.amount)
+                };
+            }
+            return result;
+        }
+
+        public class BitfinexBalance
+        {
+            //{"type":"deposit","currency":"usd","amount":"7831.30410987","available":"0.000001"}
+            public string type { get; set; }
+            public string currency { get; set; }
+            public string amount { get; set; }
+            public string available { get; set; }
         }
 
         public class BitfinexSymbolDetails
