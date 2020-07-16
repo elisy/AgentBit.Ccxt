@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -19,6 +20,7 @@ namespace AgentBit.Ccxt.Base
     {
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
+        public string ApiUserId { get; set; }
 
         public Dictionary<string, string> CommonCurrencies { get; set; }
 
@@ -154,5 +156,22 @@ namespace AgentBit.Ccxt.Base
             else
                 return code;
         }
+
+
+        protected string HmacSha256(string text, string key)
+        {
+            ASCIIEncoding encoding = new ASCIIEncoding();
+
+            Byte[] textBytes = encoding.GetBytes(text);
+            Byte[] keyBytes = encoding.GetBytes(key);
+
+            Byte[] hashBytes;
+
+            using (HMACSHA256 hash = new HMACSHA256(keyBytes))
+                hashBytes = hash.ComputeHash(textBytes);
+
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
     }
 }

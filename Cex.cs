@@ -11,9 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
+    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
+        readonly Uri ApiPrivateV1 = new Uri("https://cex.io/api/");
 
         public Cex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
@@ -91,12 +92,6 @@ namespace AgentBit.Ccxt
             return _markets;
         }
 
-        public override void Sign(Request request)
-        {
-            if (request.ApiType != "private")
-                return;
-        }
-
         public async Task<Ticker> FetchTicker(string symbol)
         {
             return (await FetchTickers(new string[] { symbol }).ConfigureAwait(false)).FirstOrDefault();
@@ -148,6 +143,39 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+
+            request.Params["key"] = ApiKey;
+            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+            request.Params["signature"] = HmacSha256(request.Params["nonce"] + ApiUserId + ApiKey, ApiSecret);
+        }
+
+
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = "balance/",
+                Method = HttpMethod.Post
+            }).ConfigureAwait(false);
+
+            var balances = JsonSerializer.Deserialize<Dictionary<string, object>>(response.Text);
+            var result = (from balance in balances
+                          let valueObject = (JsonElement)balance.Value
+                          where valueObject.ValueKind == JsonValueKind.Object
+                          select new { Asset = balance.Key, Balance = valueObject })
+                          .ToDictionary(m=> GetCommonCurrencyCode(m.Asset.ToUpper()), 
+                            m => new BalanceAccount() { 
+                                Free = JsonSerializer.Deserialize<double>(m.Balance.GetProperty("available").GetString()), 
+                                Total = JsonSerializer.Deserialize<double>(m.Balance.GetProperty("available").GetString()) + JsonSerializer.Deserialize<double>(m.Balance.GetProperty("orders").GetString())
+                            });
+            return result;
+        }
 
         public class CexCurrencyProfiles
         {
