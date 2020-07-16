@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,15 +13,17 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
+    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
+        readonly Uri ApiPrivateV1 = new Uri("https://api.exmo.com/v1/");
+        readonly Uri ApiPrivateV1_1 = new Uri("https://api.exmo.com/v1.1/");
 
         public Exmo(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
             //https://exmo.com/en/news_view?id=1472
             //The maximum number of API requests from one user or one IP address can reach 180 per minute
-            RateLimit = (int) 60 / 180 * 1000;
+            RateLimit = (int)60 / 180 * 1000;
         }
 
         public override async Task<Market[]> FetchMarkets()
@@ -37,7 +41,7 @@ namespace AgentBit.Ccxt
 
                 var result = new List<Market>();
 
-                foreach(var market in details)
+                foreach (var market in details)
                 {
                     var newItem = new Market();
                     newItem.Id = market.Key;
@@ -69,12 +73,6 @@ namespace AgentBit.Ccxt
                 _markets = result.ToArray();
             }
             return _markets;
-        }
-
-        public override void Sign(Request request)
-        {
-            if (request.ApiType != "private")
-                return;
         }
 
         public async Task<Ticker> FetchTicker(string symbol)
@@ -126,7 +124,73 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
+        public override void SetBody(Request request)
+        {
+            if (request.Params != null && request.Params.Count != 0)
+            {
+                request.Body = new FormUrlEncodedContent(request.Params);
+            }
+        }
 
+        protected string BuildPostData(Dictionary<string, string> data)
+        {
+            var sb = new StringBuilder();
+            foreach (var key in data)
+                sb.AppendFormat("{0}={1}&", key.Key, key.Value);
+            if (sb.Length > 0)
+                sb.Remove(sb.Length - 1, 1);
+            return sb.ToString();
+        }
+
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+
+            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+            var sign = "";
+            using (HMACSHA512 hmac = new HMACSHA512(Encoding.UTF8.GetBytes(ApiSecret)))
+            {
+                byte[] b = hmac.ComputeHash(Encoding.UTF8.GetBytes(BuildPostData(request.Params)));
+                sign = BitConverter.ToString(b).Replace("-", "").ToLower();
+            }
+
+            request.Headers.Add("Sign", sign);
+            request.Headers.Add("Key", ApiKey);
+        }
+
+
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1_1,
+                Path = "user_info",
+                Method = HttpMethod.Post
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<ExmoBalance>(response.Text);
+
+            var result = (from balance in jsonResponse.balances
+                          join reserve in jsonResponse.reserved on balance.Key equals reserve.Key
+                          select new
+                          {
+                              Asset = GetCommonCurrencyCode(balance.Key.ToUpper()),
+                              Total = JsonSerializer.Deserialize<double>(balance.Value) + JsonSerializer.Deserialize<double>(reserve.Value),
+                              Free = JsonSerializer.Deserialize<double>(balance.Value)
+                          }).ToDictionary(m => m.Asset, m => new BalanceAccount() { Free = m.Free, Total = m.Total });
+            return result;
+        }
+
+        public class ExmoBalance
+        {
+            public ulong uid { get; set; }
+            public ulong server_date { get; set; }
+            public Dictionary<string, string> balances { get; set; }
+            public Dictionary<string, string> reserved { get; set; }
+        }
 
         public class ExmoPairSettings
         {
