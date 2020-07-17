@@ -158,7 +158,7 @@ namespace AgentBit.Ccxt.Base
         }
 
 
-        protected string HmacSha256(string text, string key)
+        protected string GetHmac<T>(string text, string key) where T : HMAC
         {
             ASCIIEncoding encoding = new ASCIIEncoding();
 
@@ -167,7 +167,7 @@ namespace AgentBit.Ccxt.Base
 
             Byte[] hashBytes;
 
-            using (HMACSHA256 hash = new HMACSHA256(keyBytes))
+            using (var hash = (T)Activator.CreateInstance(typeof(T), new object[] { keyBytes }))
                 hashBytes = hash.ComputeHash(textBytes);
 
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();

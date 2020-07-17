@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -150,7 +151,7 @@ namespace AgentBit.Ccxt
 
             request.Params["key"] = ApiKey;
             request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-            request.Params["signature"] = HmacSha256(request.Params["nonce"] + ApiUserId + ApiKey, ApiSecret);
+            request.Params["signature"] = GetHmac<HMACSHA256>(request.Params["nonce"] + ApiUserId + ApiKey, ApiSecret);
         }
 
 

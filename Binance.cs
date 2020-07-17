@@ -192,6 +192,36 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
+        public async Task<DateTime> FetchTime()
+        {
+            var response = await Request(new Base.Request()
+            {
+                BaseUri = ApiV3,
+                Path = $"time",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+            var result = JsonSerializer.Deserialize<Dictionary<string, ulong>>(response.Text);
+            return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(result["serverTime"]);
+        }
+
+        private BinanceTimeDifference _serverTimeDifference;
+
+        public async Task<TimeSpan> GetServerTimeSpan()
+        {
+            if (_serverTimeDifference == null)
+                _serverTimeDifference = new BinanceTimeDifference();
+            if ((DateTime.UtcNow - _serverTimeDifference.LastUpdate).TotalSeconds > 1024)
+            {
+                //https://github.com/ccxt/ccxt/issues/850
+                //Synching your clock is not a one time thing; clocks drift for a host of reasons and need to be repeatedly synced. This is why the default on ntpd is to sync clocks at least every 1024 s (17mins 4 seconds)
+                var serverTime = await FetchTime();
+                var now = DateTime.UtcNow;
+                _serverTimeDifference.TimeSpan = (serverTime - now);
+                _serverTimeDifference.LastUpdate = now;
+            }
+            return _serverTimeDifference.TimeSpan;
+        }
+
         public override void Sign(Request request)
         {
             if (request.ApiType != "private")
@@ -201,9 +231,14 @@ namespace AgentBit.Ccxt
 
             var uri = new Uri(request.BaseUri, request.Path);
             var query = HttpUtility.ParseQueryString(uri.Query);
-            query.Add("timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture));
+
+            //https://github.com/ccxt/ccxt/issues/850
+            //Error Timestamp for this request was 1000ms ahead of the server's time.
+            //query.Add("timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture));
+            query.Add("timestamp", DateTimeOffset.UtcNow.Add(GetServerTimeSpan().GetAwaiter().GetResult()).ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture));
+
             query.Add("recvWindow", "5000");
-            query.Add("signature", HmacSha256(query.ToString(), ApiSecret));
+            query.Add("signature", GetHmac<HMACSHA256>(query.ToString(), ApiSecret));
             request.Path = $"{uri.LocalPath}?{query.ToString()}";
         }
 
@@ -254,6 +289,12 @@ namespace AgentBit.Ccxt
         public class BinanceExchangeInfo
         {
             public BinanceExchangeInfoSymbol[] symbols { get; set; }
+        }
+
+        public class BinanceTimeDifference
+        {
+            public TimeSpan TimeSpan { get; set; }
+            public DateTime LastUpdate { get; set; }
         }
 
         public class BinanceTicker

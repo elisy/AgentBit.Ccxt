@@ -149,14 +149,13 @@ namespace AgentBit.Ccxt
 
             request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
 
-            var sign = "";
-            using (HMACSHA512 hmac = new HMACSHA512(Encoding.UTF8.GetBytes(ApiSecret)))
-            {
-                byte[] b = hmac.ComputeHash(Encoding.UTF8.GetBytes(BuildPostData(request.Params)));
-                sign = BitConverter.ToString(b).Replace("-", "").ToLower();
-            }
-
-            request.Headers.Add("Sign", sign);
+            //var sign = "";
+            //using (HMACSHA512 hmac = new HMACSHA512(Encoding.UTF8.GetBytes(ApiSecret)))
+            //{
+            //    byte[] b = hmac.ComputeHash(Encoding.UTF8.GetBytes(BuildPostData(request.Params)));
+            //    sign = BitConverter.ToString(b).Replace("-", "").ToLower();
+            //}
+            request.Headers.Add("Sign", GetHmac<HMACSHA512>(BuildPostData(request.Params), ApiSecret));
             request.Headers.Add("Key", ApiKey);
         }
 

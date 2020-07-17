@@ -190,16 +190,16 @@ namespace AgentBit.Ccxt
 
             string jsonString = JsonSerializer.Serialize(request.Params);
             string json64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString));
-            byte[] data = Encoding.UTF8.GetBytes(json64);
-            var encoding = new ASCIIEncoding();
-            var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
-            byte[] hash = hashMaker.ComputeHash(data);
-            string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
+            
+            //byte[] data = Encoding.UTF8.GetBytes(json64);
+            //var encoding = new ASCIIEncoding();
+            //var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
+            //byte[] hash = hashMaker.ComputeHash(data);
+            //string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
 
-            //HttpWebRequest request = CreateJsonRequest("https://api.bitfinex.com" + apiPath, timeout, null);
             request.Headers.Add("X-BFX-APIKEY", ApiKey);
             request.Headers.Add("X-BFX-PAYLOAD", json64);
-            request.Headers.Add("X-BFX-SIGNATURE", signature);
+            request.Headers.Add("X-BFX-SIGNATURE", GetHmac<HMACSHA384>(json64, ApiSecret));
         }
 
         public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
