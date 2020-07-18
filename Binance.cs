@@ -86,7 +86,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.1 / 100;
                     newItem.FeeTaker = 0.1 / 100;
 
-                    newItem.Url = $"https://www.binance.com/en/trade/{@newItem.BaseId}_{@newItem.QuoteId}?ref=28257151";
+                    newItem.Url = $"https://www.binance.com/en/trade/pro/{@newItem.BaseId}_{@newItem.QuoteId}?ref=28257151";
 
                     result.Add(newItem);
                 }
