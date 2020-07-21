@@ -110,14 +110,14 @@ namespace AgentBit.Ccxt
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
 
                     newItem.PricePrecision = market.price_precision;
-                    newItem.AmountMin = Convert.ToDouble(market.minimum_order_size, CultureInfo.InvariantCulture);
-                    newItem.AmountMax = Convert.ToDouble(market.maximum_order_size, CultureInfo.InvariantCulture);
-                    newItem.PriceMin = Math.Pow(10, -newItem.PricePrecision);
-                    newItem.PriceMax = Math.Pow(10, newItem.PricePrecision);
+                    newItem.AmountMin = JsonSerializer.Deserialize<decimal>(market.minimum_order_size);
+                    newItem.AmountMax = JsonSerializer.Deserialize<decimal>(market.maximum_order_size);
+                    newItem.PriceMin = (decimal)Math.Pow(10, -newItem.PricePrecision);
+                    newItem.PriceMax = (decimal)Math.Pow(10, newItem.PricePrecision);
                     newItem.CostMin = newItem.AmountMin * newItem.PriceMin;
 
-                    newItem.FeeMaker = 0.1 / 100;
-                    newItem.FeeTaker = 0.2 / 100;
+                    newItem.FeeMaker = 0.1M / 100;
+                    newItem.FeeTaker = 0.2M / 100;
 
                     newItem.Url = $"https://www.bitfinex.com/t/{newItem.BaseId}:{newItem.QuoteId}?refcode=BbA2Zpxdo";
 
@@ -154,7 +154,7 @@ namespace AgentBit.Ccxt
                 Ticker ticker = new Ticker();
 
                 //ticker.Timestamp = (uint)(ticker.DateTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds
-                ticker.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<double>(item.timestamp) * 1000);
+                ticker.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<decimal>(item.timestamp) * 1000);
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
 
                 var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.pair);
@@ -162,14 +162,14 @@ namespace AgentBit.Ccxt
                     continue;
                 
                 ticker.Symbol = market.Symbol;
-                ticker.High = JsonSerializer.Deserialize<double>(item.high);
-                ticker.Low = JsonSerializer.Deserialize<double>(item.low);
-                ticker.Bid = JsonSerializer.Deserialize<double>(item.bid);
-                ticker.Ask = JsonSerializer.Deserialize<double>(item.ask);
-                ticker.Last = JsonSerializer.Deserialize<double>(item.last_price);
+                ticker.High = JsonSerializer.Deserialize<decimal>(item.high);
+                ticker.Low = JsonSerializer.Deserialize<decimal>(item.low);
+                ticker.Bid = JsonSerializer.Deserialize<decimal>(item.bid);
+                ticker.Ask = JsonSerializer.Deserialize<decimal>(item.ask);
+                ticker.Last = JsonSerializer.Deserialize<decimal>(item.last_price);
                 ticker.Close = ticker.Last;
-                ticker.Average = JsonSerializer.Deserialize<double>(item.mid);
-                ticker.BaseVolume = JsonSerializer.Deserialize<double>(item.volume);
+                ticker.Average = JsonSerializer.Deserialize<decimal>(item.mid);
+                ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.volume);
                 ticker.Info = item;
 
                 result.Add(ticker);
@@ -218,8 +218,8 @@ namespace AgentBit.Ccxt
             {
                 result[GetCommonCurrencyCode(balance.currency.ToUpper())] = new BalanceAccount() 
                 {
-                    Free = JsonSerializer.Deserialize<double>(balance.available),
-                    Total = JsonSerializer.Deserialize<double>(balance.amount)
+                    Free = JsonSerializer.Deserialize<decimal>(balance.available),
+                    Total = JsonSerializer.Deserialize<decimal>(balance.amount)
                 };
             }
             return result;

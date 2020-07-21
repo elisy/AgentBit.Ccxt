@@ -63,28 +63,28 @@ namespace AgentBit.Ccxt
                     var priceFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "PRICE_FILTER");
                     if (priceFilter != null)
                     {
-                        newItem.PriceMin = JsonSerializer.Deserialize<double>(priceFilter["minPrice"].ToString());
-                        newItem.PriceMax = JsonSerializer.Deserialize<double>(priceFilter["maxPrice"].ToString());
+                        newItem.PriceMin = JsonSerializer.Deserialize<decimal>(priceFilter["minPrice"].ToString());
+                        newItem.PriceMax = JsonSerializer.Deserialize<decimal>(priceFilter["maxPrice"].ToString());
                     }
 
                     var lotFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "LOT_SIZE");
                     if (lotFilter != null)
                     {
                         newItem.AmountPrecision = (int)Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
-                        newItem.AmountMin = JsonSerializer.Deserialize<double>(lotFilter["minQty"].ToString());
-                        newItem.AmountMax = JsonSerializer.Deserialize<double>(lotFilter["maxQty"].ToString());
+                        newItem.AmountMin = JsonSerializer.Deserialize<decimal>(lotFilter["minQty"].ToString());
+                        newItem.AmountMax = JsonSerializer.Deserialize<decimal>(lotFilter["maxQty"].ToString());
                     }
 
                     var minNotional = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "MIN_NOTIONAL");
                     if (minNotional != null)
                     {
-                        newItem.CostMin = JsonSerializer.Deserialize<double>(minNotional["minNotional"].ToString());
+                        newItem.CostMin = JsonSerializer.Deserialize<decimal>(minNotional["minNotional"].ToString());
                     }
 
                     newItem.Active = (market.status == "TRADING");
 
-                    newItem.FeeMaker = 0.1 / 100;
-                    newItem.FeeTaker = 0.1 / 100;
+                    newItem.FeeMaker = 0.1M / 100;
+                    newItem.FeeTaker = 0.1M / 100;
 
                     newItem.Url = $"https://www.binance.com/en/trade/pro/{@newItem.BaseId}_{@newItem.QuoteId}?ref=28257151";
 
@@ -166,21 +166,21 @@ namespace AgentBit.Ccxt
                     continue;
 
                 ticker.Symbol = market.Symbol;
-                ticker.High = JsonSerializer.Deserialize<double>(item.highPrice);
-                ticker.Low = JsonSerializer.Deserialize<double>(item.lowPrice);
-                ticker.Bid = JsonSerializer.Deserialize<double>(item.bidPrice);
-                ticker.BidVolume = JsonSerializer.Deserialize<double>(item.bidQty);
-                ticker.Ask = JsonSerializer.Deserialize<double>(item.askPrice);
-                ticker.AskVolume = JsonSerializer.Deserialize<double>(item.askQty);
-                ticker.Vwap = JsonSerializer.Deserialize<double>(item.weightedAvgPrice);
-                ticker.Last = JsonSerializer.Deserialize<double>(item.lastPrice);
+                ticker.High = JsonSerializer.Deserialize<decimal>(item.highPrice);
+                ticker.Low = JsonSerializer.Deserialize<decimal>(item.lowPrice);
+                ticker.Bid = JsonSerializer.Deserialize<decimal>(item.bidPrice);
+                ticker.BidVolume = JsonSerializer.Deserialize<decimal>(item.bidQty);
+                ticker.Ask = JsonSerializer.Deserialize<decimal>(item.askPrice);
+                ticker.AskVolume = JsonSerializer.Deserialize<decimal>(item.askQty);
+                ticker.Vwap = JsonSerializer.Deserialize<decimal>(item.weightedAvgPrice);
+                ticker.Last = JsonSerializer.Deserialize<decimal>(item.lastPrice);
                 ticker.Close = ticker.Last;
-                ticker.PreviousClose = JsonSerializer.Deserialize<double>(item.prevClosePrice);
-                ticker.Change = JsonSerializer.Deserialize<double>(item.priceChange);
-                ticker.Percentage = JsonSerializer.Deserialize<double>(item.priceChangePercent);
+                ticker.PreviousClose = JsonSerializer.Deserialize<decimal>(item.prevClosePrice);
+                ticker.Change = JsonSerializer.Deserialize<decimal>(item.priceChange);
+                ticker.Percentage = JsonSerializer.Deserialize<decimal>(item.priceChangePercent);
 
-                ticker.BaseVolume = JsonSerializer.Deserialize<double>(item.volume);
-                ticker.QuoteVolume = JsonSerializer.Deserialize<double>(item.quoteVolume);
+                ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.volume);
+                ticker.QuoteVolume = JsonSerializer.Deserialize<decimal>(item.quoteVolume);
                 ticker.Info = item;
 
                 result.Add(ticker);
@@ -262,8 +262,8 @@ namespace AgentBit.Ccxt
                 //{"asset":"LTC","free":"0.01975000","locked":"0.00000000"}
                 result[GetCommonCurrencyCode(item.GetProperty("asset").GetString().ToUpper())] = new BalanceAccount()
                 {
-                    Free = JsonSerializer.Deserialize<double>(item.GetProperty("free").ToString()),
-                    Total = JsonSerializer.Deserialize<double>(item.GetProperty("free").ToString()) + JsonSerializer.Deserialize<double>(item.GetProperty("locked").ToString())
+                    Free = JsonSerializer.Deserialize<decimal>(item.GetProperty("free").ToString()),
+                    Total = JsonSerializer.Deserialize<decimal>(item.GetProperty("free").ToString()) + JsonSerializer.Deserialize<decimal>(item.GetProperty("locked").ToString())
                 };
             }
             return result;

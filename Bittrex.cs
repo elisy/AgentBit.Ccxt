@@ -53,14 +53,14 @@ namespace AgentBit.Ccxt
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
 
                     newItem.PricePrecision = market.precision;
-                    newItem.PriceMin = Math.Pow(10, -newItem.PricePrecision);
+                    newItem.PriceMin = (decimal)Math.Pow(10, -newItem.PricePrecision);
                     newItem.AmountPrecision = 8;
-                    newItem.AmountMin = JsonSerializer.Deserialize<double>(market.minTradeSize);
+                    newItem.AmountMin = JsonSerializer.Deserialize<decimal>(market.minTradeSize);
 
                     newItem.Active = market.status == "ONLINE";
 
-                    newItem.FeeMaker = 0.2 / 100;
-                    newItem.FeeTaker = 0.2 / 100;
+                    newItem.FeeMaker = 0.2M / 100;
+                    newItem.FeeTaker = 0.2M / 100;
 
                     newItem.Url = $"https://global.bittrex.com/Market/Index?MarketName={newItem.QuoteId}-{newItem.BaseId}?referralCode=RKK-Z4E-YDB";
 
@@ -126,14 +126,14 @@ namespace AgentBit.Ccxt
                     continue;
 
                 ticker.Symbol = market.Symbol;
-                ticker.High = JsonSerializer.Deserialize<double>(item.summary.high);
-                ticker.Low = JsonSerializer.Deserialize<double>(item.summary.low);
-                ticker.Bid = JsonSerializer.Deserialize<double>(item.ticker.bidRate);
-                ticker.Ask = JsonSerializer.Deserialize<double>(item.ticker.askRate);
-                ticker.Last = JsonSerializer.Deserialize<double>(item.ticker.lastTradeRate);
+                ticker.High = JsonSerializer.Deserialize<decimal>(item.summary.high);
+                ticker.Low = JsonSerializer.Deserialize<decimal>(item.summary.low);
+                ticker.Bid = JsonSerializer.Deserialize<decimal>(item.ticker.bidRate);
+                ticker.Ask = JsonSerializer.Deserialize<decimal>(item.ticker.askRate);
+                ticker.Last = JsonSerializer.Deserialize<decimal>(item.ticker.lastTradeRate);
                 ticker.Close = ticker.Last;
-                ticker.BaseVolume = JsonSerializer.Deserialize<double>(item.summary.volume);
-                ticker.QuoteVolume = JsonSerializer.Deserialize<double>(item.summary.quoteVolume);
+                ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.summary.volume);
+                ticker.QuoteVolume = JsonSerializer.Deserialize<decimal>(item.summary.quoteVolume);
                 ticker.Info = item;
 
                 result.Add(ticker);

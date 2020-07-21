@@ -6,9 +6,9 @@ namespace AgentBit.Ccxt.Base
 {
     public class BalanceAccount
     {
-        public double Free { get; set; }
-        public double Total { get; set; }
-        public double Used => Total - Free;
+        public decimal Free { get; set; }
+        public decimal Total { get; set; }
+        public decimal Used => Total - Free;
 
         public override string ToString()
         {

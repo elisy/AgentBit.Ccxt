@@ -55,10 +55,10 @@ namespace AgentBit.Ccxt
                     newItem.Active = market.trading == "Enabled";
 
                     var parts = market.minimum_order.Split(' ');
-                    newItem.CostMin = JsonSerializer.Deserialize<double>(parts[0]);
+                    newItem.CostMin = JsonSerializer.Deserialize<decimal>(parts[0]);
 
-                    newItem.FeeMaker = 0.5 / 100;
-                    newItem.FeeTaker = 0.5 / 100;
+                    newItem.FeeMaker = 0.5M / 100;
+                    newItem.FeeTaker = 0.5M / 100;
 
                     newItem.Url = $"https://www.bitstamp.net/markets/{newItem.BaseId}/{newItem.QuoteId}/";
 
@@ -93,17 +93,17 @@ namespace AgentBit.Ccxt
             
             var result = new Ticker();
             result.Symbol = market.Symbol;
-            result.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<double>(ticker.timestamp));
+            result.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<decimal>(ticker.timestamp));
             result.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(result.Timestamp);
-            result.High = JsonSerializer.Deserialize<double>(ticker.high);
-            result.Low = JsonSerializer.Deserialize<double>(ticker.low);
-            result.Bid = JsonSerializer.Deserialize<double>(ticker.bid);
-            result.Ask = JsonSerializer.Deserialize<double>(ticker.ask);
-            result.Vwap = JsonSerializer.Deserialize<double>(ticker.vwap);
-            result.Open = JsonSerializer.Deserialize<double>(ticker.open);
-            result.Last = JsonSerializer.Deserialize<double>(ticker.last);
+            result.High = JsonSerializer.Deserialize<decimal>(ticker.high);
+            result.Low = JsonSerializer.Deserialize<decimal>(ticker.low);
+            result.Bid = JsonSerializer.Deserialize<decimal>(ticker.bid);
+            result.Ask = JsonSerializer.Deserialize<decimal>(ticker.ask);
+            result.Vwap = JsonSerializer.Deserialize<decimal>(ticker.vwap);
+            result.Open = JsonSerializer.Deserialize<decimal>(ticker.open);
+            result.Last = JsonSerializer.Deserialize<decimal>(ticker.last);
             result.Close = result.Last;
-            result.BaseVolume = JsonSerializer.Deserialize<double>(ticker.volume);
+            result.BaseVolume = JsonSerializer.Deserialize<decimal>(ticker.volume);
             result.QuoteVolume = result.BaseVolume * result.Vwap;
             result.Info = ticker;
 

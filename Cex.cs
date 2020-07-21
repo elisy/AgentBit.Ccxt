@@ -75,15 +75,15 @@ namespace AgentBit.Ccxt
                                 AmountPrecision = amountPrecision,
 
                                 AmountMin = market.minLotSize,
-                                AmountMax = market.maxLotSize.HasValue ? market.maxLotSize.Value : double.MaxValue,
+                                AmountMax = market.maxLotSize.HasValue ? market.maxLotSize.Value : decimal.MaxValue,
 
-                                PriceMin = JsonSerializer.Deserialize<double>(market.minPrice),
-                                PriceMax = JsonSerializer.Deserialize<double>(market.maxPrice),
+                                PriceMin = JsonSerializer.Deserialize<decimal>(market.minPrice),
+                                PriceMax = JsonSerializer.Deserialize<decimal>(market.maxPrice),
 
                                 CostMin = market.minLotSizeS2,
 
-                                FeeMaker = 0.16 / 100,
-                                FeeTaker = 0.25 / 100,
+                                FeeMaker = 0.16M / 100,
+                                FeeTaker = 0.25M / 100,
 
                                 Url = $"https://cex.io/trade/{market.symbol1}-{market.symbol2}",
 
@@ -123,17 +123,17 @@ namespace AgentBit.Ccxt
 
                 Ticker ticker = new Ticker();
 
-                ticker.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<double>(item.timestamp)); ;
+                ticker.Timestamp = Convert.ToUInt64(JsonSerializer.Deserialize<decimal>(item.timestamp)); ;
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(ticker.Timestamp);
 
                 ticker.Symbol = market.Symbol;
-                ticker.High = JsonSerializer.Deserialize<double>(item.high);
-                ticker.Low = JsonSerializer.Deserialize<double>(item.low);
+                ticker.High = JsonSerializer.Deserialize<decimal>(item.high);
+                ticker.Low = JsonSerializer.Deserialize<decimal>(item.low);
                 ticker.Bid = item.bid;
                 ticker.Ask = item.ask;
-                ticker.Last = JsonSerializer.Deserialize<double>(item.last);
+                ticker.Last = JsonSerializer.Deserialize<decimal>(item.last);
                 ticker.Close = ticker.Last;
-                ticker.BaseVolume = JsonSerializer.Deserialize<double>(item.volume);
+                ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.volume);
                 ticker.Info = item;
 
                 result.Add(ticker);
@@ -172,8 +172,8 @@ namespace AgentBit.Ccxt
                           select new { Asset = balance.Key, Balance = valueObject })
                           .ToDictionary(m=> GetCommonCurrencyCode(m.Asset.ToUpper()), 
                             m => new BalanceAccount() { 
-                                Free = JsonSerializer.Deserialize<double>(m.Balance.GetProperty("available").GetString()), 
-                                Total = JsonSerializer.Deserialize<double>(m.Balance.GetProperty("available").GetString()) + JsonSerializer.Deserialize<double>(m.Balance.GetProperty("orders").GetString())
+                                Free = JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("available").GetString()), 
+                                Total = JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("available").GetString()) + JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("orders").GetString())
                             });
             return result;
         }
@@ -199,8 +199,8 @@ namespace AgentBit.Ccxt
             public string symbol2 { get; set; }
             public int pricePrecision { get; set; }
             public string priceScale { get; set; }
-            public double minLotSize { get; set; }
-            public double minLotSizeS2 { get; set; }
+            public decimal minLotSize { get; set; }
+            public decimal minLotSizeS2 { get; set; }
         }
 
 
@@ -215,7 +215,7 @@ namespace AgentBit.Ccxt
             public int precision { get; set; }
             public int scale { get; set; }
             public string minimumCurrencyAmount { get; set; }
-            public double minimalWithdrawalAmount { get; set; }
+            public decimal minimalWithdrawalAmount { get; set; }
         }
 
 
@@ -230,9 +230,9 @@ namespace AgentBit.Ccxt
         {
             public string symbol1 { get; set; }
             public string symbol2 { get; set; }
-            public double minLotSize { get; set; }
-            public double minLotSizeS2 { get; set; }
-            public double? maxLotSize { get; set; } // Null for some pairs
+            public decimal minLotSize { get; set; }
+            public decimal minLotSizeS2 { get; set; }
+            public decimal? maxLotSize { get; set; } // Null for some pairs
             public string minPrice { get; set; }
             public string maxPrice { get; set; }
         }
@@ -256,8 +256,8 @@ namespace AgentBit.Ccxt
             public string volume30d { get; set; }
             public string priceChange { get; set; }
             public string priceChangePercentage { get; set; }
-            public double bid { get; set; }
-            public double ask { get; set; }
+            public decimal bid { get; set; }
+            public decimal ask { get; set; }
         }
 
     }

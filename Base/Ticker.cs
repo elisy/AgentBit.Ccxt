@@ -9,29 +9,29 @@ namespace AgentBit.Ccxt.Base
         public string Symbol { get; set; }
         public ulong Timestamp { get; set; }
         public DateTime DateTime { get; set; }
-        public double High { get; set; }
-        public double Low { get; set; }
-        public double Bid { get; set; }
-        public double BidVolume { get; set; }
-        public double Ask { get; set; }
-        public double AskVolume { get; set; }
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
+        public decimal Bid { get; set; }
+        public decimal BidVolume { get; set; }
+        public decimal Ask { get; set; }
+        public decimal AskVolume { get; set; }
         /// <summary>
         /// Weighted Average Price
         /// </summary>
-        public double Vwap { get; set; }
-        public double Open { get; set; }
-        public double Close { get; set; }
-        public double Last { get; set; }
+        public decimal Vwap { get; set; }
+        public decimal Open { get; set; }
+        public decimal Close { get; set; }
+        public decimal Last { get; set; }
 
         /// <summary>
         /// Previous Day Close
         /// </summary>
-        public double PreviousClose { get; set; }
-        public double Change { get; set; }
-        public double Percentage { get; set; }
-        public double Average { get; set; }
-        public double BaseVolume { get; set; }
-        public double QuoteVolume { get; set; }
+        public decimal PreviousClose { get; set; }
+        public decimal Change { get; set; }
+        public decimal Percentage { get; set; }
+        public decimal Average { get; set; }
+        public decimal BaseVolume { get; set; }
+        public decimal QuoteVolume { get; set; }
         public object Info { get; set; }
     }
 }

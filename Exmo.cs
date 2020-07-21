@@ -52,18 +52,18 @@ namespace AgentBit.Ccxt
                     newItem.Base = GetCommonCurrencyCode(newItem.BaseId);
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId);
 
-                    newItem.CostMin = JsonSerializer.Deserialize<double>(market.Value.min_amount);
-                    newItem.CostMax = JsonSerializer.Deserialize<double>(market.Value.max_amount);
-                    newItem.PriceMin = JsonSerializer.Deserialize<double>(market.Value.min_price);
-                    newItem.PriceMax = JsonSerializer.Deserialize<double>(market.Value.max_price);
-                    newItem.AmountMin = JsonSerializer.Deserialize<double>(market.Value.min_quantity);
-                    newItem.AmountMax = JsonSerializer.Deserialize<double>(market.Value.max_quantity);
+                    newItem.CostMin = JsonSerializer.Deserialize<decimal>(market.Value.min_amount);
+                    newItem.CostMax = JsonSerializer.Deserialize<decimal>(market.Value.max_amount);
+                    newItem.PriceMin = JsonSerializer.Deserialize<decimal>(market.Value.min_price);
+                    newItem.PriceMax = JsonSerializer.Deserialize<decimal>(market.Value.max_price);
+                    newItem.AmountMin = JsonSerializer.Deserialize<decimal>(market.Value.min_quantity);
+                    newItem.AmountMax = JsonSerializer.Deserialize<decimal>(market.Value.max_quantity);
 
                     newItem.PricePrecision = 8;
                     newItem.AmountPrecision = 8;
 
-                    newItem.FeeTaker = 0.4 / 100;
-                    newItem.FeeMaker = 0.4 / 100;
+                    newItem.FeeTaker = 0.4M / 100;
+                    newItem.FeeMaker = 0.4M / 100;
 
                     newItem.Url = $"https://exmo.com/en/trade/{newItem.BaseId}_{newItem.QuoteId}";
 
@@ -105,15 +105,15 @@ namespace AgentBit.Ccxt
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(ticker.Timestamp);
 
                 ticker.Symbol = market.Symbol;
-                ticker.High = JsonSerializer.Deserialize<double>(item.Value.high);
-                ticker.Low = JsonSerializer.Deserialize<double>(item.Value.low);
-                ticker.Bid = JsonSerializer.Deserialize<double>(item.Value.buy_price);
-                ticker.Ask = JsonSerializer.Deserialize<double>(item.Value.sell_price);
-                ticker.Last = JsonSerializer.Deserialize<double>(item.Value.last_trade);
+                ticker.High = JsonSerializer.Deserialize<decimal>(item.Value.high);
+                ticker.Low = JsonSerializer.Deserialize<decimal>(item.Value.low);
+                ticker.Bid = JsonSerializer.Deserialize<decimal>(item.Value.buy_price);
+                ticker.Ask = JsonSerializer.Deserialize<decimal>(item.Value.sell_price);
+                ticker.Last = JsonSerializer.Deserialize<decimal>(item.Value.last_trade);
                 ticker.Close = ticker.Last;
-                ticker.Average = JsonSerializer.Deserialize<double>(item.Value.avg);
-                ticker.BaseVolume = JsonSerializer.Deserialize<double>(item.Value.vol);
-                ticker.QuoteVolume = JsonSerializer.Deserialize<double>(item.Value.vol_curr);
+                ticker.Average = JsonSerializer.Deserialize<decimal>(item.Value.avg);
+                ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.Value.vol);
+                ticker.QuoteVolume = JsonSerializer.Deserialize<decimal>(item.Value.vol_curr);
                 ticker.Info = item;
 
                 result.Add(ticker);
@@ -177,8 +177,8 @@ namespace AgentBit.Ccxt
                           select new
                           {
                               Asset = GetCommonCurrencyCode(balance.Key.ToUpper()),
-                              Total = JsonSerializer.Deserialize<double>(balance.Value) + JsonSerializer.Deserialize<double>(reserve.Value),
-                              Free = JsonSerializer.Deserialize<double>(balance.Value)
+                              Total = JsonSerializer.Deserialize<decimal>(balance.Value) + JsonSerializer.Deserialize<decimal>(reserve.Value),
+                              Free = JsonSerializer.Deserialize<decimal>(balance.Value)
                           }).ToDictionary(m => m.Asset, m => new BalanceAccount() { Free = m.Free, Total = m.Total });
             return result;
         }
