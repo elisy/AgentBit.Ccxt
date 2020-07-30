@@ -87,6 +87,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeTaker = 0.1M / 100;
 
                     newItem.Url = $"https://www.binance.com/en/trade/pro/{@newItem.BaseId}_{@newItem.QuoteId}?ref=28257151";
+                    newItem.Margin = market.isMarginTradingAllowed;
 
                     result.Add(newItem);
                 }
@@ -281,6 +282,8 @@ namespace AgentBit.Ccxt
             public int quantityPrecision { get; set; }
             public int baseAssetPrecision { get; set; }
             public int quotePrecision { get; set; }
+            public int quoteAssetPrecision { get; set; }
+            public bool isMarginTradingAllowed { get; set; }
             public Dictionary<string, object>[] filters { get; set; }
             public string[] orderTypes { get; set; }
             public string[] timeInForce { get; set; }

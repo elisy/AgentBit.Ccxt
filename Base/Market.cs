@@ -36,15 +36,16 @@ namespace AgentBit.Ccxt.Base
         /// </summary>
         public string Quote { get { return _quote; } set { _quote = value.ToUpper(); Symbol = $"{_base}/{_quote}"; } }
 
-        public bool Active { get; set; }
+        public bool Active { get; set; } = true;
+
         public int PricePrecision { get; set; }
         public decimal PriceMin { get; set; }
-        public decimal PriceMax { get; set; }
+        public decimal PriceMax { get; set; } = decimal.MaxValue;
         public int AmountPrecision { get; set; }
         public decimal AmountMin { get; set; }
-        public decimal AmountMax { get; set; }
+        public decimal AmountMax { get; set; } = decimal.MaxValue;
         public decimal CostMin { get; set; }
-        public decimal CostMax { get; set; }
+        public decimal CostMax { get; set; } = decimal.MaxValue;
 
         /// <summary>
         /// Default max maker fee rate, 0.0016 = 0.16%
@@ -58,12 +59,14 @@ namespace AgentBit.Ccxt.Base
         public object Info { get; set; }
         public string Url { get; set; }
 
+        /// <summary>
+        /// Is margin trading allowed
+        /// </summary>
+        public bool Margin { get; set; } = false;
+
+
         public Market()
         {
-            Active = true;
-            PriceMax = decimal.MaxValue;
-            AmountMax = decimal.MaxValue;
-            CostMax = decimal.MaxValue;
         }
     }
 }

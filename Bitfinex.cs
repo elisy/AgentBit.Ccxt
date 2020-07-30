@@ -120,6 +120,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeTaker = 0.2M / 100;
 
                     newItem.Url = $"https://www.bitfinex.com/t/{newItem.BaseId}:{newItem.QuoteId}?refcode=BbA2Zpxdo";
+                    newItem.Margin = market.margin;
 
                     result.Add(newItem);
                 }
@@ -241,6 +242,7 @@ namespace AgentBit.Ccxt
             public int price_precision { get; set; }
             public string maximum_order_size { get; set; }
             public string minimum_order_size { get; set; }
+            public bool margin { get; set; }
         }
 
         public class BitfinexTicker
