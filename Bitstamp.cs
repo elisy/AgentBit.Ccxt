@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -12,9 +13,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Bitstamp : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
+    public class Bitstamp : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiPublicV2 = new Uri("https://www.bitstamp.net/api/v2/");
+        readonly Uri ApiPrivateV2 = new Uri("https://www.bitstamp.net/api/v2/");
 
         public Bitstamp(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
@@ -70,11 +72,6 @@ namespace AgentBit.Ccxt
             return _markets;
         }
 
-        public override void Sign(Request request)
-        {
-            if (request.ApiType != "private")
-                return;
-        }
 
         public async Task<Ticker> FetchTicker(string symbol)
         {
@@ -125,6 +122,56 @@ namespace AgentBit.Ccxt
             }).ToArray();
             await Task.WhenAll(tasks);
             return result.ToArray();
+        }
+
+        public override void SetBody(Request request)
+        {
+            if (request.Params != null && request.Params.Count != 0)
+            {
+                request.Body = new FormUrlEncodedContent(request.Params);
+            }
+        }
+
+
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+            var nonce = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+            request.Params["key"] = ApiKey;
+            request.Params["signature"] = GetHmac<HMACSHA256>($"{nonce}{ApiUserId}{ApiKey}", ApiSecret).ToUpper();
+            request.Params["nonce"] = nonce;
+        }
+
+
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV2,
+                Path = "balance/",
+                Method = HttpMethod.Post
+            }).ConfigureAwait(false);
+            var balances = JsonSerializer.Deserialize<Dictionary<string, string>>(response.Text);
+
+            var result = new Dictionary<string, BalanceAccount>();
+
+            var markets = await FetchMarkets();
+            var currencies = markets.Select(m => m.BaseId).Concat(markets.Select(m => m.QuoteId)).GroupBy(m => m).Select(m => m.Key.ToLower());
+
+            foreach (var currencyId in currencies)
+            {
+                var account = new BalanceAccount();
+                if (balances.ContainsKey(currencyId + "_available"))
+                    account.Free = JsonSerializer.Deserialize<decimal>(balances[currencyId + "_available"]);
+                if (balances.ContainsKey(currencyId + "_balance"))
+                    account.Total = JsonSerializer.Deserialize<decimal>(balances[currencyId + "_balance"]);
+                if (account.Free != 0 || account.Total != 0)
+                    result[GetCommonCurrencyCode(currencyId.ToUpper())] = account;
+            }
+
+            return result;
         }
 
         public class PairsInfo
