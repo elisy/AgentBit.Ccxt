@@ -12,7 +12,7 @@ namespace AgentBit.Ccxt
 {
     public class Huobi : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker
     {
-        readonly Uri ApiV1Public = new Uri("https://api.huobi.com/v1/");
+        readonly Uri ApiV1Public = new Uri("https://api.huobi.com/");
 
         public Huobi(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
@@ -22,7 +22,8 @@ namespace AgentBit.Ccxt
 
             CommonCurrencies = new Dictionary<string, string>() {
                 { "GET", "Themis" }, // conflict with GET (Guaranteed Entrance Token, GET Protocol)
-                { "HOT", "Hydro Protocol" } // conflict with HOT (Holo) https://github.com/ccxt/ccxt/issues/4929
+                { "HOT", "Hydro Protocol" }, // conflict with HOT (Holo) https://github.com/ccxt/ccxt/issues/4929
+                { "PNT", "Penta" }
             };
         }
 
@@ -33,7 +34,7 @@ namespace AgentBit.Ccxt
                 var response = await Request(new Base.Request()
                 {
                     BaseUri = ApiV1Public,
-                    Path = "common/symbols",
+                    Path = "v1/common/symbols",
                     ApiType = "public",
                     Method = HttpMethod.Get
                 }).ConfigureAwait(false);
@@ -90,7 +91,59 @@ namespace AgentBit.Ccxt
         {
             var markets = await FetchMarkets().ConfigureAwait(false);
 
-            throw new NotImplementedException();
+            var response = await Request(new Base.Request()
+            {
+                BaseUri = ApiV1Public,
+                Path = "market/tickers",
+                ApiType = "public",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+
+            var responseJson = JsonSerializer.Deserialize<HuobiTickersResponse>(response.Text);
+
+            var result = new List<Ticker>();
+            foreach (var item in responseJson.data)
+            {
+                Ticker ticker = new Ticker();
+
+                ticker.Timestamp = responseJson.ts;
+                ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
+
+                var market = markets.FirstOrDefault(m => m.Id == item.symbol);
+                if (market == null)
+                    continue;
+
+                ticker.Symbol = market.Symbol;
+
+                ticker.High = item.high;
+                ticker.Low = item.low;
+
+                ticker.Bid = item.bid;
+                ticker.BidVolume = item.bidSize;
+                ticker.Ask = item.ask;
+                ticker.AskVolume = item.askSize;
+
+                ticker.Open = item.open;
+                ticker.Close = item.close;
+                ticker.Last = item.close;
+                ticker.Average = (ticker.Open + ticker.Close) / 2;
+
+                ticker.BaseVolume = item.amount;
+                ticker.QuoteVolume = item.vol;
+
+                ticker.Vwap = ticker.QuoteVolume / ticker.BaseVolume;
+                ticker.Change = ticker.Close - ticker.Open;
+                ticker.Percentage = ticker.Change / ticker.Open * 100;
+
+                ticker.Info = item;
+
+                result.Add(ticker);
+            }
+
+            if (symbols == null)
+                return result.ToArray();
+            else
+                return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
         public override void Sign(Request request)
@@ -104,6 +157,31 @@ namespace AgentBit.Ccxt
         {
             public string status { get; set; }
             public Dictionary<string, JsonElement>[] data { get; set; }
+        }
+
+        public class HuobiTickersResponse
+        {
+            public string status { get; set; }
+            public ulong ts { get; set; }
+            public HuobiTicker[] data { get; set; }
+        }
+
+        public class HuobiTicker
+        {
+            //{"symbol":"paybtc","open":6.08E-6,"high":6.33E-6,"low":5.77E-6,"close":5.81E-6,"amount":440075.7610779436,"vol":2.6533161464,
+            //"count":2804,"bid":5.8E-6,"bidSize":125.9,"ask":5.84E-6,"askSize":4752.5}
+            public string symbol { get; set; }
+            public decimal open { get; set; }
+            public decimal high { get; set; }
+            public decimal low { get; set; }
+            public decimal close { get; set; }
+            public decimal amount { get; set; }
+            public decimal vol { get; set; }
+            public int count { get; set; }
+            public decimal bid { get; set; }
+            public decimal bidSize { get; set; }
+            public decimal ask { get; set; }
+            public decimal askSize { get; set; }
         }
     }
 }

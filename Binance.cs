@@ -163,7 +163,7 @@ namespace AgentBit.Ccxt
                 ticker.Timestamp = item.closeTime;
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
 
-                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.symbol);
+                var market = markets.FirstOrDefault(m => m.Id == item.symbol);
                 if (market == null)
                     continue;
 

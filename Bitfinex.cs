@@ -39,6 +39,7 @@ namespace AgentBit.Ccxt
                 { "DAT", "DATA" },
                 { "DSH", "DASH" },
                 { "DRK", "DRK" },
+                { "EDO", "PNT" },
                 { "GSD", "GUSD" },
                 { "HOT", "Hydro Protocol" },
                 { "IOS", "IOST" },
