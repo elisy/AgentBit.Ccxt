@@ -151,6 +151,7 @@ namespace AgentBit.Ccxt.Base
 
         protected string GetCommonCurrencyCode(string code)
         {
+            code = code.ToUpper();
             if (CommonCurrencies.ContainsKey(code))
                 return CommonCurrencies[code];
             else
