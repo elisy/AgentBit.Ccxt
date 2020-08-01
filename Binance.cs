@@ -89,6 +89,7 @@ namespace AgentBit.Ccxt
                     newItem.Url = $"https://www.binance.com/en/trade/pro/{@newItem.BaseId}_{@newItem.QuoteId}?ref=28257151";
                     newItem.Margin = market.isMarginTradingAllowed;
 
+                    newItem.Info = market;
                     result.Add(newItem);
                 }
 
