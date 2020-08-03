@@ -131,9 +131,11 @@ namespace AgentBit.Ccxt
                 ticker.BaseVolume = item.amount;
                 ticker.QuoteVolume = item.vol;
 
-                ticker.Vwap = ticker.QuoteVolume / ticker.BaseVolume;
+                if (ticker.BaseVolume != 0)
+                    ticker.Vwap = ticker.QuoteVolume / ticker.BaseVolume;
                 ticker.Change = ticker.Close - ticker.Open;
-                ticker.Percentage = ticker.Change / ticker.Open * 100;
+                if (ticker.Open != 0)
+                    ticker.Percentage = ticker.Change / ticker.Open * 100;
 
                 ticker.Info = item;
 
