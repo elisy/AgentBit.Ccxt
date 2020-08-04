@@ -19,7 +19,7 @@ namespace AgentBit.Ccxt.Base
         public HttpMethod Method { get; set; }
         public HttpRequestHeaders Headers { get; set; }
 
-        public Dictionary<string, string> Params { get; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Params { get; set; } = new Dictionary<string, string>();
 
         /// <summary>
         /// StringContent or FormUrlEncodedContent

@@ -87,8 +87,12 @@ namespace AgentBit.Ccxt.Base
         public Task<Market[]> FetchMarkets();
     }
 
-    public interface IFetchMyTrades
+    /// <summary>
+    /// Private method to get executed orders
+    /// </summary>
+    public interface IFetchMyTrades : IPrivateAPI
     {
+        public Task<Trade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100);
     }
 
     public interface IFetchOHLCV
@@ -137,6 +141,9 @@ namespace AgentBit.Ccxt.Base
     {
     }
 
+    /// <summary>
+    /// Public method to get trades
+    /// </summary>
     public interface IFetchTrades
     {
     }

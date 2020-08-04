@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
+    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
         readonly Uri ApiPrivateV1 = new Uri("https://api.exmo.com/v1/");
@@ -148,13 +148,6 @@ namespace AgentBit.Ccxt
                 return;
 
             request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-
-            //var sign = "";
-            //using (HMACSHA512 hmac = new HMACSHA512(Encoding.UTF8.GetBytes(ApiSecret)))
-            //{
-            //    byte[] b = hmac.ComputeHash(Encoding.UTF8.GetBytes(BuildPostData(request.Params)));
-            //    sign = BitConverter.ToString(b).Replace("-", "").ToLower();
-            //}
             request.Headers.Add("Sign", GetHmac<HMACSHA512>(BuildPostData(request.Params), ApiSecret));
             request.Headers.Add("Key", ApiKey);
         }
@@ -181,6 +174,33 @@ namespace AgentBit.Ccxt
                               Free = JsonSerializer.Deserialize<decimal>(balance.Value)
                           }).ToDictionary(m => m.Asset, m => new BalanceAccount() { Free = m.Free, Total = m.Total });
             return result;
+        }
+
+        public async Task<Trade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000)
+        {
+            var markets = await FetchMarkets();
+
+            if (symbols == null)
+                symbols = markets.Select(m => m.Symbol);
+            var symbolsHashSet = symbols.ToHashSet();
+
+            var paramPairs = markets.Where(m => symbolsHashSet.Contains(m.Symbol)).Select(m => m.Id);
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1_1,
+                Path = "user_trades",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, string>()
+                {
+                    ["pair"] = String.Join(",", paramPairs),
+                    ["offset"] = "0",
+                    ["limit"] = limit.ToString(CultureInfo.InvariantCulture),
+                }
+            }).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
 
         public class ExmoBalance
