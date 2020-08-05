@@ -7,7 +7,9 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Unicode;
 using System.Threading.Tasks;
+using System.Web;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Logging;
 
@@ -132,15 +134,6 @@ namespace AgentBit.Ccxt
             }
         }
 
-        protected string BuildPostData(Dictionary<string, string> data)
-        {
-            var sb = new StringBuilder();
-            foreach (var key in data)
-                sb.AppendFormat("{0}={1}&", key.Key, key.Value);
-            if (sb.Length > 0)
-                sb.Remove(sb.Length - 1, 1);
-            return sb.ToString();
-        }
 
         public override void Sign(Request request)
         {
@@ -148,7 +141,12 @@ namespace AgentBit.Ccxt
                 return;
 
             request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-            request.Headers.Add("Sign", GetHmac<HMACSHA512>(BuildPostData(request.Params), ApiSecret));
+
+            //Get Post string identical to SetBody method
+            var formContent = new FormUrlEncodedContent(request.Params);
+            var postData = formContent.ReadAsStringAsync().Result;
+
+            request.Headers.Add("Sign", GetHmac<HMACSHA512>(postData, ApiSecret));
             request.Headers.Add("Key", ApiKey);
         }
 
@@ -176,7 +174,7 @@ namespace AgentBit.Ccxt
             return result;
         }
 
-        public async Task<Trade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000)
+        public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000)
         {
             var markets = await FetchMarkets();
 
@@ -200,7 +198,63 @@ namespace AgentBit.Ccxt
                 }
             }).ConfigureAwait(false);
 
-            throw new NotImplementedException();
+            var jsonResponse = JsonSerializer.Deserialize<Dictionary<string, ExmoMyTrade[]>>(response.Text);
+
+            var result = new List<MyTrade>();
+
+            foreach (var kvp in jsonResponse.Where(m => m.Value.Length != 0))
+            {
+                var market = markets.FirstOrDefault(m => m.Id == kvp.Key);
+                if (market == null)
+                    continue;
+
+                foreach (var item in kvp.Value)
+                {
+                    var myTrade = new MyTrade
+                    {
+                        Id = item.trade_id.ToString(CultureInfo.InvariantCulture),
+                        Timestamp = item.date,
+                        DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(item.date),
+                        Symbol = market.Symbol,
+                        OrderId = item.order_id.ToString(CultureInfo.InvariantCulture),
+                        TakerOrMaker = item.exec_type == "maker" ? TakerOrMaker.Maker : TakerOrMaker.Taker,
+                        Side = item.type == "buy" ? Side.Buy : Side.Sell,
+                        Price = JsonSerializer.Deserialize<decimal>(item.price),
+                        Amount = JsonSerializer.Deserialize<decimal>(item.quantity),
+                        Info = item
+                    };
+
+                    if (!String.IsNullOrEmpty(item.commission_amount))
+                        myTrade.FeeCost = JsonSerializer.Deserialize<decimal>(item.commission_amount);
+                    if (!String.IsNullOrEmpty(item.commission_currency))
+                        myTrade.FeeCurrency = GetCommonCurrencyCode(item.commission_currency);
+                    if (!String.IsNullOrEmpty(item.commission_percent))
+                        myTrade.FeeRate = JsonSerializer.Deserialize<decimal>(item.commission_percent) / 100;
+
+                    result.Add(myTrade);
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        public class ExmoMyTrade
+        {
+            //{"trade_id":183471457,"date":1593599974,"type":"buy","pair":"BTG_BTC","order_id":7127500537,
+            //"quantity":"8.44695045","price":"0.001215","amount":"0.01026304","exec_type":"maker",
+            //"commission_amount":"0.0337878","commission_currency":"BTG","commission_percent":"0.4"}
+            public ulong trade_id { get; set; }
+            public ulong date { get; set; }
+            public string type { get; set; }
+            public string pair { get; set; }
+            public ulong order_id { get; set; }
+            public string quantity { get; set; }
+            public string price { get; set; }
+            public string amount { get; set; }
+            public string exec_type { get; set; }
+            public string commission_amount { get; set; }
+            public string commission_currency { get; set; }
+            public string commission_percent { get; set; }
         }
 
         public class ExmoBalance
