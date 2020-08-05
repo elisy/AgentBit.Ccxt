@@ -62,7 +62,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.2M / 100;
                     newItem.FeeTaker = 0.2M / 100;
 
-                    newItem.Url = $"https://global.bittrex.com/Market/Index?MarketName={newItem.QuoteId}-{newItem.BaseId}?referralCode=RKK-Z4E-YDB";
+                    newItem.Url = $"https://global.bittrex.com/Market/Index?MarketName={newItem.QuoteId}-{newItem.BaseId}&referralCode=RKK-Z4E-YDB";
 
                     newItem.Info = market;
 
