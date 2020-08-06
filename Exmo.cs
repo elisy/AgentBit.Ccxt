@@ -226,8 +226,12 @@ namespace AgentBit.Ccxt
 
                     if (!String.IsNullOrEmpty(item.commission_amount))
                         myTrade.FeeCost = JsonSerializer.Deserialize<decimal>(item.commission_amount);
+
                     if (!String.IsNullOrEmpty(item.commission_currency))
                         myTrade.FeeCurrency = GetCommonCurrencyCode(item.commission_currency);
+                    if (String.IsNullOrEmpty(myTrade.FeeCurrency))
+                        myTrade.FeeCurrency = myTrade.Side == Side.Buy ? market.Quote : market.Base;
+
                     if (!String.IsNullOrEmpty(item.commission_percent))
                         myTrade.FeeRate = JsonSerializer.Deserialize<decimal>(item.commission_percent) / 100;
 
