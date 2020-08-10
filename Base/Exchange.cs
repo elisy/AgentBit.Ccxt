@@ -132,7 +132,7 @@ namespace AgentBit.Ccxt.Base
         /// <param name="request"></param>
         public virtual void SetBody(Request request)
         {
-            if (request.Params != null && request.Params.Count != 0)
+            if (request.Params != null)
             {
                 var json = JsonSerializer.Serialize<Dictionary<string, string>>(request.Params);
                 request.Body = new StringContent(json, Encoding.UTF8, "application/json");
