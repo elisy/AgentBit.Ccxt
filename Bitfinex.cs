@@ -12,12 +12,13 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
+    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
 
         readonly Uri ApiPrivateV1 = new Uri("https://api.bitfinex.com");
+        readonly Uri ApiPrivateV2 = new Uri("https://api.bitfinex.com/");
 
         public Bitfinex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
@@ -64,7 +65,7 @@ namespace AgentBit.Ccxt
                 { "VSY", "VSYS" },
                 { "WAX", "WAXP" },
                 { "XCH", "XCHF" },
-                { "ZBT", "ZB" }            
+                { "ZBT", "ZB" }
             };
         }
 
@@ -92,11 +93,11 @@ namespace AgentBit.Ccxt
 
                 var result = new List<Market>();
 
-                foreach(var market in details.Where(m=>ids.Contains(m.pair)))
+                foreach (var market in details.Where(m => ids.Contains(m.pair)))
                 {
                     var newItem = new Market();
                     newItem.Id = market.pair.ToUpper();
-                    if (newItem.Id.IndexOf(':') > 0) 
+                    if (newItem.Id.IndexOf(':') > 0)
                     {
                         var parts = newItem.Id.Split(new char[] { ':' });
                         newItem.BaseId = parts[0];
@@ -162,7 +163,7 @@ namespace AgentBit.Ccxt
                 var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.pair);
                 if (market == null)
                     continue;
-                
+
                 ticker.Symbol = market.Symbol;
                 ticker.High = JsonSerializer.Deserialize<decimal>(item.high);
                 ticker.Low = JsonSerializer.Deserialize<decimal>(item.low);
@@ -182,27 +183,46 @@ namespace AgentBit.Ccxt
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
         }
 
-        public override void Sign(Request request)
+        /// <summary>
+        /// FetchBalanse uses API v1
+        /// </summary>
+        /// <param name="request"></param>
+        public void SignV1(Request request)
         {
-            if (request.ApiType != "private")
-                return;
-
             request.Params["request"] = request.Path;
             request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
 
             string jsonString = JsonSerializer.Serialize(request.Params);
             string json64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString));
-            
-            //byte[] data = Encoding.UTF8.GetBytes(json64);
-            //var encoding = new ASCIIEncoding();
-            //var hashMaker = new HMACSHA384(encoding.GetBytes(ApiSecret));
-            //byte[] hash = hashMaker.ComputeHash(data);
-            //string signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
 
             request.Headers.Add("X-BFX-APIKEY", ApiKey);
             request.Headers.Add("X-BFX-PAYLOAD", json64);
             request.Headers.Add("X-BFX-SIGNATURE", GetHmac<HMACSHA384>(json64, ApiSecret));
         }
+
+        public void SignV2(Request request)
+        {
+            var nonce = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+            var data = $"/api/{request.Path}{nonce}{JsonSerializer.Serialize(request.Params)}";
+            var signature = GetHmac<HMACSHA384>(data, ApiSecret);
+            request.Headers.Add("bfx-nonce", nonce);
+            request.Headers.Add("bfx-apikey", ApiKey);
+            request.Headers.Add("bfx-signature", signature);
+        }
+
+
+        public override void Sign(Request request)
+        {
+            if (request.ApiType != "private")
+                return;
+
+            if (request.Path.StartsWith("/v1/"))
+                SignV1(request);
+            else if (request.Path.StartsWith("v2/"))
+                SignV2(request);
+        }
+
 
         public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
         {
@@ -216,15 +236,37 @@ namespace AgentBit.Ccxt
             var balances = JsonSerializer.Deserialize<BitfinexBalance[]>(response.Text);
 
             var result = new Dictionary<string, BalanceAccount>();
-            foreach(var balance in balances.Where(m => m.type == "exchange"))
+            foreach (var balance in balances.Where(m => m.type == "exchange"))
             {
-                result[GetCommonCurrencyCode(balance.currency.ToUpper())] = new BalanceAccount() 
+                result[GetCommonCurrencyCode(balance.currency.ToUpper())] = new BalanceAccount()
                 {
                     Free = JsonSerializer.Deserialize<decimal>(balance.available),
                     Total = JsonSerializer.Deserialize<decimal>(balance.amount)
                 };
             }
             return result;
+        }
+
+        public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100)
+        {
+            //Number of records (Max: 10000)
+            if (limit > 10000)
+                limit = 10000;
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV2,
+                Path = "v2/auth/r/trades/hist",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>()
+                {
+                    ["start"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds.ToString(CultureInfo.InvariantCulture),
+                    //["limit"] = limit
+                }
+            }).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
 
         public class BitfinexBalance
