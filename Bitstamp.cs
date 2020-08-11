@@ -128,7 +128,7 @@ namespace AgentBit.Ccxt
         {
             if (request.Params != null && request.Params.Count != 0)
             {
-                request.Body = new FormUrlEncodedContent(request.Params);
+                request.Body = new FormUrlEncodedContent(request.Params.ToDictionary(m => m.Key, m => Convert.ToString(m.Value, CultureInfo.InvariantCulture)));
             }
         }
 

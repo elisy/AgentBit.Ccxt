@@ -117,7 +117,8 @@ namespace AgentBit.Ccxt.Base
         {
             if (response.HttpResponseMessage.IsSuccessStatusCode)
                 return;
-            throw new ExchangeError();
+            _logger.LogError($"Handle error: {response.Text}");
+            throw new ExchangeError(response.Text);
         }
 
         public virtual void Sign(Request request)
@@ -132,9 +133,9 @@ namespace AgentBit.Ccxt.Base
         /// <param name="request"></param>
         public virtual void SetBody(Request request)
         {
-            if (request.Params != null)
+            if (request.Params != null && request.Params.Count != 0)
             {
-                var json = JsonSerializer.Serialize<Dictionary<string, string>>(request.Params);
+                var json = JsonSerializer.Serialize(request.Params);
                 request.Body = new StringContent(json, Encoding.UTF8, "application/json");
             }
         }

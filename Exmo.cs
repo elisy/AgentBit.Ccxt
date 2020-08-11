@@ -130,7 +130,7 @@ namespace AgentBit.Ccxt
         {
             if (request.Params != null && request.Params.Count != 0)
             {
-                request.Body = new FormUrlEncodedContent(request.Params);
+                request.Body = new FormUrlEncodedContent(request.Params.ToDictionary(m => m.Key, m => Convert.ToString(m.Value, CultureInfo.InvariantCulture)));
             }
         }
 
@@ -140,10 +140,10 @@ namespace AgentBit.Ccxt
             if (request.ApiType != "private")
                 return;
 
-            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+            request.Params["nonce"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             //Get Post string identical to SetBody method
-            var formContent = new FormUrlEncodedContent(request.Params);
+            var formContent = new FormUrlEncodedContent(request.Params.ToDictionary(m => m.Key, m => Convert.ToString(m.Value, CultureInfo.InvariantCulture)));
             var postData = formContent.ReadAsStringAsync().Result;
 
             request.Headers.Add("Sign", GetHmac<HMACSHA512>(postData, ApiSecret));
@@ -190,7 +190,7 @@ namespace AgentBit.Ccxt
                 BaseUri = ApiPrivateV1_1,
                 Path = "user_trades",
                 Method = HttpMethod.Post,
-                Params = new Dictionary<string, string>()
+                Params = new Dictionary<string, object>()
                 {
                     ["pair"] = String.Join(",", paramPairs),
                     ["offset"] = "0",
