@@ -262,11 +262,45 @@ namespace AgentBit.Ccxt
                 Params = new Dictionary<string, object>()
                 {
                     ["start"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds.ToString(CultureInfo.InvariantCulture),
-                    //["limit"] = limit
+                    //["limit"] = limit //Error when both start and limit
                 }
             }).ConfigureAwait(false);
 
-            throw new NotImplementedException();
+            var markets = await FetchMarkets();
+
+            var ordersJson = JsonSerializer.Deserialize<JsonElement[][]>(response.Text);
+
+            var result = new List<MyTrade>();
+            foreach (var item in ordersJson)
+            {
+                var market = markets.FirstOrDefault(m => "t" + m.Id == item[1].GetString());
+                if (market == null)
+                    continue;
+
+                var myTrade = new MyTrade
+                {
+                    Id = item[0].GetUInt64().ToString(CultureInfo.InvariantCulture),
+                    Timestamp = item[2].GetUInt64(),
+                    DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(item[2].GetUInt64()),
+                    Symbol = market.Symbol,
+                    OrderId = item[3].GetUInt64().ToString(CultureInfo.InvariantCulture),
+                    Side = item[4].GetDecimal() > 0 ? Side.Buy : Side.Sell,
+                    Amount = item[4].GetDecimal(),
+                    Price = item[5].GetDecimal(),
+                    FeeCost = Math.Abs(item[9].GetDecimal()),
+                    FeeCurrency = GetCommonCurrencyCode(item[10].GetString()),
+                    Info = item
+                };
+
+                if (myTrade.FeeCurrency == market.Base)
+                    myTrade.FeeRate = Math.Abs(Math.Round(myTrade.FeeCost / myTrade.Amount, 4));
+                else
+                    myTrade.FeeRate = Math.Abs(Math.Round(myTrade.FeeCost / (myTrade.Amount * myTrade.Price), 4));
+
+                result.Add(myTrade);
+            }
+
+            return result.ToArray();
         }
 
         public class BitfinexBalance
