@@ -285,7 +285,7 @@ namespace AgentBit.Ccxt
                     Symbol = market.Symbol,
                     OrderId = item[3].GetUInt64().ToString(CultureInfo.InvariantCulture),
                     Side = item[4].GetDecimal() > 0 ? Side.Buy : Side.Sell,
-                    Amount = item[4].GetDecimal(),
+                    Amount = Math.Abs(item[4].GetDecimal()),
                     Price = item[5].GetDecimal(),
                     FeeCost = Math.Abs(item[9].GetDecimal()),
                     FeeCurrency = GetCommonCurrencyCode(item[10].GetString()),
