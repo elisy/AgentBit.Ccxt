@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
+    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
         readonly Uri ApiPrivateV1 = new Uri("https://cex.io/api/");
@@ -177,6 +177,71 @@ namespace AgentBit.Ccxt
                             });
             return result;
         }
+
+        public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = "archived_orders/",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>() { ["dateFrom"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds }
+            }).ConfigureAwait(false);
+
+            var markets = await FetchMarkets();
+
+            var ordersJson = JsonSerializer.Deserialize<JsonElement[]>(response.Text);
+
+            var result = new List<MyTrade>();
+            foreach (var item in ordersJson)
+            {
+                var status = item.GetProperty("status").GetString();
+                if (status == "c")
+                    continue;
+
+                var symbol1 = item.GetProperty("symbol1").GetString();
+                var symbol2 = item.GetProperty("symbol2").GetString();
+
+                var market = markets.FirstOrDefault(m => m.Id == $"{symbol1}/{symbol2}" );
+                if (market == null)
+                    continue;
+
+                var amount = Convert.ToDecimal(item.GetProperty("amount").GetString(), CultureInfo.InvariantCulture);
+                var remains = Convert.ToDecimal(item.GetProperty("remains").GetString(), CultureInfo.InvariantCulture);
+
+                var makerAmountCurrency2 = item.TryGetProperty("ta:" + symbol2.ToUpper(), out var ta) ? Convert.ToDecimal(ta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                var takerAmountCurrency2 = item.TryGetProperty("tta:" + symbol2.ToUpper(), out var tta) ? Convert.ToDecimal(tta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                var total = makerAmountCurrency2 + takerAmountCurrency2;
+
+                var feeMaker = item.TryGetProperty("fa:" + symbol2.ToUpper(), out var fa) ? Convert.ToDecimal(fa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                var feeTaker = item.TryGetProperty("tfa:" + symbol2.ToUpper(), out var tfa) ? Convert.ToDecimal(tfa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                var fee = feeMaker + feeTaker;
+
+                var time = Convert.ToDateTime(item.GetProperty("time").GetString());
+
+                var myTrade = new MyTrade
+                {
+                    Id = item.GetProperty("id").GetString(),
+                    Timestamp = (ulong)time.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
+                    DateTime = time,
+                    Symbol = market.Symbol,
+                    OrderId = item.GetProperty("id").GetString(),
+                    Side = item.GetProperty("type").GetString() == "buy" ? Side.Buy : Side.Sell,
+                    Amount = amount - remains,
+                    Price = total / (amount - remains),
+                    FeeCost = fee,
+                    FeeCurrency = GetCommonCurrencyCode(symbol2),
+                    Info = item
+                };
+                myTrade.FeeRate = Math.Abs(Math.Round(myTrade.FeeCost / (myTrade.Amount * myTrade.Price), 4));
+
+                result.Add(myTrade);
+            }
+
+            return result.ToArray();
+        }
+
 
         public class CexCurrencyProfiles
         {
