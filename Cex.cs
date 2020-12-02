@@ -196,6 +196,7 @@ namespace AgentBit.Ccxt
             var result = new List<MyTrade>();
             foreach (var item in ordersJson)
             {
+                //Order status ('d' = done, fully executed OR 'c' = canceled, not executed OR 'cd' = cancel-done, partially executed OR 'a' = active, created)
                 var status = item.GetProperty("status").GetString();
                 if (status == "c")
                     continue;
