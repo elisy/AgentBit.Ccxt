@@ -208,13 +208,18 @@ namespace AgentBit.Ccxt
                     continue;
 
                 var amount = Convert.ToDecimal(item.GetProperty("amount").GetString(), CultureInfo.InvariantCulture);
+                //pending amount (if partially executed)
                 var remains = Convert.ToDecimal(item.GetProperty("remains").GetString(), CultureInfo.InvariantCulture);
 
+                //total amount in current currency (Maker)
                 var makerAmountCurrency2 = item.TryGetProperty("ta:" + symbol2.ToUpper(), out var ta) ? Convert.ToDecimal(ta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                //total amount in current currency (Taker)
                 var takerAmountCurrency2 = item.TryGetProperty("tta:" + symbol2.ToUpper(), out var tta) ? Convert.ToDecimal(tta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
                 var total = makerAmountCurrency2 + takerAmountCurrency2;
 
+                //fee amount in current currency (Maker)
                 var feeMaker = item.TryGetProperty("fa:" + symbol2.ToUpper(), out var fa) ? Convert.ToDecimal(fa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
+                //fee amount in current currency (Taker)
                 var feeTaker = item.TryGetProperty("tfa:" + symbol2.ToUpper(), out var tfa) ? Convert.ToDecimal(tfa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
                 var fee = feeMaker + feeTaker;
 
