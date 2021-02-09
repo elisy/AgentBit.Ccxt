@@ -174,6 +174,7 @@ namespace AgentBit.Ccxt
                 ticker.Close = ticker.Last;
                 ticker.Average = JsonSerializer.Deserialize<decimal>(item.mid);
                 ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.volume);
+                ticker.QuoteVolume = ticker.BaseVolume * JsonSerializer.Deserialize<decimal>(item.mid);
                 ticker.Info = item;
 
                 result.Add(ticker);
