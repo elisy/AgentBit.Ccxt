@@ -101,6 +101,7 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchOpenOrders
     {
+        public Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null);
     }
 
     public interface IFetchOrder

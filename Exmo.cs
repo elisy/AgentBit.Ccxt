@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
+    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
         readonly Uri ApiPrivateV1 = new Uri("https://api.exmo.com/v1/");
@@ -241,6 +241,80 @@ namespace AgentBit.Ccxt
 
             return result.ToArray();
         }
+
+        public async Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1_1,
+                Path = "user_open_orders",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>()
+                {
+                }
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<Dictionary<string, ExmoOpenOrder[]>>(response.Text);
+
+            var markets = await FetchMarkets();
+
+            var result = new List<Order>();
+            foreach (var kvp in jsonResponse.Where(m => m.Value.Length != 0))
+            {
+                var market = markets.FirstOrDefault(m => m.Id == kvp.Key);
+                if (market == null)
+                    continue;
+
+                foreach (var item in kvp.Value)
+                {
+                    var order = new Order()
+                    {
+                        //Id = item.trade_id.ToString(CultureInfo.InvariantCulture),
+                        //Timestamp = item.date,
+                        //DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(item.date),
+                        //Symbol = market.Symbol,
+                        //OrderId = item.order_id.ToString(CultureInfo.InvariantCulture),
+                        //TakerOrMaker = item.exec_type == "maker" ? TakerOrMaker.Maker : TakerOrMaker.Taker,
+                        //Side = item.type == "buy" ? Side.Buy : Side.Sell,
+                        //Price = JsonSerializer.Deserialize<decimal>(item.price),
+                        //Amount = JsonSerializer.Deserialize<decimal>(item.quantity),
+                        //Info = item
+                    };
+
+                    //if (!String.IsNullOrEmpty(item.commission_amount))
+                    //    order.FeeCost = JsonSerializer.Deserialize<decimal>(item.commission_amount);
+
+                    //if (!String.IsNullOrEmpty(item.commission_currency))
+                    //    order.FeeCurrency = GetCommonCurrencyCode(item.commission_currency);
+                    //if (String.IsNullOrEmpty(order.FeeCurrency))
+                    //    order.FeeCurrency = order.Side == Side.Buy ? market.Quote : market.Base;
+
+                    //if (!String.IsNullOrEmpty(item.commission_percent))
+                    //    order.FeeRate = JsonSerializer.Deserialize<decimal>(item.commission_percent) / 100;
+
+                    result.Add(order);
+                }
+            }
+
+            throw new NotImplementedException();
+        }
+
+
+        public class ExmoOpenOrder 
+        {
+            public string order_id { get; set; }
+            public string parent_order_id { get; set; }
+            public string client_id { get; set; }
+            public string created { get; set; }
+            public string type { get; set; }
+            public string pair { get; set; }
+            public string quantity { get; set; }
+            public string price { get; set; }
+            public string trigger_price { get; set; }
+            public string amount { get; set; }
+        }
+
 
         public class ExmoMyTrade
         {
