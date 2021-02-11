@@ -117,6 +117,7 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchOrders
     {
+        public Task<Order[]> FetchOrders(DateTime since, IEnumerable<string> symbols = null, uint limit = 100);
     }
 
     public interface IFetchOrderTrades

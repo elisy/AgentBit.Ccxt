@@ -16,4 +16,17 @@ namespace AgentBit.Ccxt.Base
         Sell
     }
 
+    public enum OrderType
+    {
+        Limit,
+        Market
+    }
+
+    public enum OrderStatus
+    {
+        Open,
+        Closed,
+        Canceled
+    }
+
 }
