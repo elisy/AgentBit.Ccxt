@@ -268,40 +268,28 @@ namespace AgentBit.Ccxt
 
                 foreach (var item in kvp.Value)
                 {
-                    var order = new Order()
-                    {
-                        //Id = item.trade_id.ToString(CultureInfo.InvariantCulture),
-                        //Timestamp = item.date,
-                        //DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(item.date),
-                        //Symbol = market.Symbol,
-                        //OrderId = item.order_id.ToString(CultureInfo.InvariantCulture),
-                        //TakerOrMaker = item.exec_type == "maker" ? TakerOrMaker.Maker : TakerOrMaker.Taker,
-                        //Side = item.type == "buy" ? Side.Buy : Side.Sell,
-                        //Price = JsonSerializer.Deserialize<decimal>(item.price),
-                        //Amount = JsonSerializer.Deserialize<decimal>(item.quantity),
-                        //Info = item
-                    };
-
-                    //if (!String.IsNullOrEmpty(item.commission_amount))
-                    //    order.FeeCost = JsonSerializer.Deserialize<decimal>(item.commission_amount);
-
-                    //if (!String.IsNullOrEmpty(item.commission_currency))
-                    //    order.FeeCurrency = GetCommonCurrencyCode(item.commission_currency);
-                    //if (String.IsNullOrEmpty(order.FeeCurrency))
-                    //    order.FeeCurrency = order.Side == Side.Buy ? market.Quote : market.Base;
-
-                    //if (!String.IsNullOrEmpty(item.commission_percent))
-                    //    order.FeeRate = JsonSerializer.Deserialize<decimal>(item.commission_percent) / 100;
+                    var order = new Order();
+                    order.Id = item.order_id;
+                    order.Timestamp = JsonSerializer.Deserialize<ulong>(item.created);
+                    order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(order.Timestamp);
+                    order.Symbol = market.Symbol;
+                    order.Side = item.type == "buy" ? Side.Buy : Side.Sell;
+                    order.Amount = JsonSerializer.Deserialize<decimal>(item.quantity);
+                    order.Price = JsonSerializer.Deserialize<decimal>(item.price);
+                    order.Cost = JsonSerializer.Deserialize<decimal>(item.amount);
+                    order.Status = OrderStatus.Open;
+                    order.Type = OrderType.Limit;
+                    order.Info = item;
 
                     result.Add(order);
                 }
             }
 
-            throw new NotImplementedException();
+            return result.ToArray();
         }
 
 
-        public class ExmoOpenOrder 
+        public class ExmoOpenOrder
         {
             public string order_id { get; set; }
             public string parent_order_id { get; set; }

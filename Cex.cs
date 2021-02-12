@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
+    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
         readonly Uri ApiPrivateV1 = new Uri("https://cex.io/api/");
@@ -249,6 +249,59 @@ namespace AgentBit.Ccxt
             return result.ToArray();
         }
 
+        public async Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = "open_orders/",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>() { }
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<CexOpenOrder[]>(response.Text);
+
+            var markets = await FetchMarkets();
+
+            var result = new List<Order>();
+            foreach (var item in jsonResponse)
+            {
+                var market = markets.FirstOrDefault(m => m.Id == $"{item.symbol1}/{item.symbol2}");
+                if (market == null)
+                    continue;
+
+                var order = new Order();
+                order.Id = item.id;
+                order.Timestamp = JsonSerializer.Deserialize<ulong>(item.time);
+                order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(order.Timestamp);
+                order.Symbol = market.Symbol;
+                order.Side = item.type == "buy" ? Side.Buy : Side.Sell;
+                order.Amount = JsonSerializer.Deserialize<decimal>(item.amount);
+                order.Price = JsonSerializer.Deserialize<decimal>(item.price);
+                order.Cost = order.Amount * order.Price;
+                order.Status = OrderStatus.Open;
+                order.Type = OrderType.Limit;
+                order.Remaining = JsonSerializer.Deserialize<decimal>(item.pending);
+                order.Filled = order.Amount - order.Remaining;
+                order.Info = item;
+
+                result.Add(order);
+            }
+            return result.ToArray();
+        }
+
+        public class CexOpenOrder
+        {
+            public string id { get; set; }
+            public string time { get; set; }
+            public string type { get; set; }
+            public string price { get; set; }
+            public string amount { get; set; }
+            public string pending { get; set; }
+            public string symbol1 { get; set; }
+            public string symbol2 { get; set; }
+        }
 
         public class CexCurrencyProfiles
         {

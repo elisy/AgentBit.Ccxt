@@ -20,7 +20,7 @@ namespace AgentBit.Ccxt.Base
 
         public decimal Price { get; set; }
         public decimal Amount { get; set; }
-        public decimal Cost => Price * Amount;
+        public decimal Cost { get; set; }
 
         public decimal Filled { get; set; }
         public decimal Remaining { get; set; }
