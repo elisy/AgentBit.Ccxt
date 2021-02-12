@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance
+    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchOpenOrders
     {
         readonly Uri ApiV3 = new Uri("https://api.binance.com/api/v3/");
 
@@ -269,6 +269,73 @@ namespace AgentBit.Ccxt
                 };
             }
             return result;
+        }
+
+        public async Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiV3,
+                Path = "openOrders",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<BinanceOpenOrder[]>(response.Text);
+
+            var markets = await FetchMarkets();
+
+            var result = new List<Order>();
+            foreach (var item in jsonResponse)
+            {
+                var market = markets.FirstOrDefault(m => m.Id == item.symbol);
+                if (market == null)
+                    continue;
+
+                var order = new Order();
+                order.Id = item.orderId.ToString(CultureInfo.InvariantCulture);
+                order.Timestamp = item.time;
+                order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(order.Timestamp);
+                order.Symbol = market.Symbol;
+
+                order.Price = JsonSerializer.Deserialize<decimal>(item.price);
+                order.Amount = JsonSerializer.Deserialize<decimal>(item.origQty);
+                order.Filled = JsonSerializer.Deserialize<decimal>(item.executedQty);
+                order.Cost = JsonSerializer.Deserialize<decimal>(item.cummulativeQuoteQty);
+                order.Remaining = order.Amount - order.Filled;
+
+                order.Side = item.type == "buy" ? Side.Buy : Side.Sell;
+                order.Cost = order.Amount * order.Price;
+                order.Status = OrderStatus.Open;
+                order.Type = OrderType.Limit;
+
+                order.Info = item;
+
+                result.Add(order);
+            }
+            return result.ToArray();
+        }
+
+        public class BinanceOpenOrder
+        {
+            public string symbol { get; set; }
+            public ulong orderId { get; set; }
+            public long orderListId { get; set; }
+            public string clientOrderId { get; set; }
+            public string price { get; set; }
+            public string origQty { get; set; }
+            public string executedQty { get; set; }
+            public string cummulativeQuoteQty { get; set; }
+            public string status { get; set; }
+            public string timeInForce { get; set; }
+            public string type { get; set; }
+            public string side { get; set; }
+            public string stopPrice { get; set; }
+            public string icebergQty { get; set; }
+            public ulong time { get; set; }
+            public ulong updateTime { get; set; }
+            public bool isWorking { get; set; }
+            public string origQuoteOrderQty { get; set; }
         }
 
         public class BinanceExchangeInfoSymbol

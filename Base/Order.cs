@@ -25,12 +25,6 @@ namespace AgentBit.Ccxt.Base
         public decimal Filled { get; set; }
         public decimal Remaining { get; set; }
 
-        public decimal Average { get; set; }
-
-        public decimal FeeCost { get; set; }
-        public string FeeCurrency { get; set; }
-        public decimal FeeRate { get; set; }
-
         public object Info { get; set; }
     }
 }
