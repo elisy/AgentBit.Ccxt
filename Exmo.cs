@@ -67,7 +67,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeTaker = 0.4M / 100;
                     newItem.FeeMaker = 0.4M / 100;
 
-                    newItem.Url = $"https://exmo.com/en/trade/{newItem.BaseId}_{newItem.QuoteId}";
+                    newItem.Url = $"https://exmo.com/en/trade/{newItem.BaseId}_{newItem.QuoteId}?ref=931291";
 
                     result.Add(newItem);
                 }
