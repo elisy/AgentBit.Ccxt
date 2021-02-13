@@ -22,6 +22,8 @@ namespace AgentBit.Ccxt.Base
         public decimal Amount { get; set; }
         public decimal Cost { get; set; }
 
+        public string ClientId { get; set; }
+
         public decimal Filled { get; set; }
         public decimal Remaining { get; set; }
 

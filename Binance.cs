@@ -294,6 +294,7 @@ namespace AgentBit.Ccxt
 
                 var order = new Order();
                 order.Id = item.orderId.ToString(CultureInfo.InvariantCulture);
+                order.ClientId = item.clientOrderId;
                 order.Timestamp = item.time;
                 order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(order.Timestamp);
                 order.Symbol = market.Symbol;

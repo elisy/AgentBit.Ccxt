@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders
+    public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders, ICreateOrder
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
         readonly Uri ApiPrivateV1 = new Uri("https://api.exmo.com/v1/");
@@ -270,6 +270,7 @@ namespace AgentBit.Ccxt
                 {
                     var order = new Order();
                     order.Id = item.order_id;
+                    order.ClientId = item.client_id;
                     order.Timestamp = JsonSerializer.Deserialize<ulong>(item.created);
                     order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(order.Timestamp);
                     order.Symbol = market.Symbol;
@@ -288,6 +289,51 @@ namespace AgentBit.Ccxt
             return result.ToArray();
         }
 
+        public async Task<string> CreateOrder(string symbol, OrderType type, Side side, decimal amount, decimal price = 0)
+        {
+            string parameterType = "";
+            if (side == Side.Buy && type == OrderType.Limit)
+                parameterType = "buy";
+            else if (side == Side.Sell && type == OrderType.Limit)
+                parameterType = "sell";
+            else if (side == Side.Buy && type == OrderType.Market)
+                parameterType = "market_buy";
+            else if (side == Side.Sell && type == OrderType.Market)
+                parameterType = "market_sell";
+
+            var markets = await FetchMarkets();
+            var market = markets.First(market => market.Symbol == symbol);
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1_1,
+                Path = "order_create",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>()
+                {
+                    ["pair"] = market.Id,
+                    ["quantity"] = amount,
+                    ["price"] = price,
+                    ["type"] = parameterType
+                }
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<ExmoCreateOrder>(response.Text);
+            if (!jsonResponse.result)
+                throw new ExchangeError(jsonResponse.error);
+            else
+                return jsonResponse.client_id.ToString(CultureInfo.InvariantCulture);
+        }
+
+
+        public class ExmoCreateOrder
+        {
+            public bool result { get; set; }
+            public string error { get; set; }
+            public uint order_id { get; set; }
+            public uint client_id { get; set; }
+        }
 
         public class ExmoOpenOrder
         {

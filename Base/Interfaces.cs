@@ -25,16 +25,17 @@ namespace AgentBit.Ccxt.Base
     {
     }
 
-    public interface ICreateLimitOrder
-    {
-    }
+    //public interface ICreateLimitOrder
+    //{
+    //}
 
-    public interface ICreateMarketOrder
-    {
-    }
+    //public interface ICreateMarketOrder
+    //{
+    //}
 
     public interface ICreateOrder
     {
+        public Task<string> CreateOrder(string symbol, OrderType type, Side side, decimal amount, decimal price = 0);
     }
 
     public interface IDeposit
