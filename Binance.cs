@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -14,7 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchOpenOrders
+    public class Binance : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchOpenOrders, ICreateOrder
     {
         readonly Uri ApiV3 = new Uri("https://api.binance.com/api/v3/");
 
@@ -305,7 +306,7 @@ namespace AgentBit.Ccxt
                 order.Cost = JsonSerializer.Deserialize<decimal>(item.cummulativeQuoteQty);
                 order.Remaining = order.Amount - order.Filled;
 
-                order.Side = item.type == "buy" ? Side.Buy : Side.Sell;
+                order.Side = item.side == "BUY" ? Side.Buy : Side.Sell;
                 order.Cost = order.Amount * order.Price;
                 order.Status = OrderStatus.Open;
                 order.Type = OrderType.Limit;
@@ -316,6 +317,44 @@ namespace AgentBit.Ccxt
             }
             return result.ToArray();
         }
+
+        public async Task<string> CreateOrder(string symbol, OrderType type, Side side, decimal amount, decimal price = 0)
+        {
+            var markets = await FetchMarkets();
+            var market = markets.First(market => market.Symbol == symbol);
+
+            var query = new NameValueCollection()
+            {
+                ["symbol"] = market.Id,
+                ["side"] = side.ToString().ToUpper(),
+                ["type"] = type.ToString().ToUpper(),
+                ["timeInForce"] = "GTC",
+                ["quantity"] = amount.ToString(CultureInfo.InvariantCulture),
+                ["price"] = price.ToString(CultureInfo.InvariantCulture)
+            };
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiV3,
+                Path = $"order?{query.ToString()}",
+                Method = HttpMethod.Post
+            }).ConfigureAwait(false);
+
+            var jsonResponse = JsonSerializer.Deserialize<BinanceCreateOrder>(response.Text);
+            return jsonResponse.orderId.ToString(CultureInfo.InvariantCulture);
+        }
+
+
+        public class BinanceCreateOrder
+        {
+            public string symbol { get; set; }
+            public ulong orderId { get; set; }
+            public long orderListId { get; set; }
+            public string clientOrderId { get; set; }
+            public ulong transactTime { get; set; }
+        }
+
 
         public class BinanceOpenOrder
         {
