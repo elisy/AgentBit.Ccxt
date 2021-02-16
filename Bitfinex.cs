@@ -387,7 +387,11 @@ namespace AgentBit.Ccxt
                     ["pair"] = market.Id,
                     ["type"] = $"EXCHANGE {type.ToString().ToUpper()}",
                     ["price"] = price.ToString(CultureInfo.InvariantCulture),
-                    ["amount"] = amountParameter.ToString(CultureInfo.InvariantCulture)
+                    ["amount"] = amountParameter.ToString(CultureInfo.InvariantCulture),
+                    ["meta"] = new Dictionary<string, string>()
+                    {
+                        ["aff_code"] = "BbA2Zpxdo"
+                    }
                 }
             }).ConfigureAwait(false);
 
