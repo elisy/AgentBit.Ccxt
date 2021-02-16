@@ -323,15 +323,13 @@ namespace AgentBit.Ccxt
             var markets = await FetchMarkets();
             var market = markets.First(market => market.Symbol == symbol);
 
-            var query = new NameValueCollection()
-            {
-                ["symbol"] = market.Id,
-                ["side"] = side.ToString().ToUpper(),
-                ["type"] = type.ToString().ToUpper(),
-                ["timeInForce"] = "GTC",
-                ["quantity"] = amount.ToString(CultureInfo.InvariantCulture),
-                ["price"] = price.ToString(CultureInfo.InvariantCulture)
-            };
+            var query = HttpUtility.ParseQueryString("");
+            query.Add("symbol", market.Id);
+            query.Add("side", side.ToString().ToUpper());
+            query.Add("type", type.ToString().ToUpper());
+            query.Add("timeInForce", "GTC");
+            query.Add("quantity", Math.Round(amount, market.AmountPrecision).ToString(CultureInfo.InvariantCulture));
+            query.Add("price", Math.Round(price, market.PricePrecision).ToString(CultureInfo.InvariantCulture));
 
             var response = await Request(new Base.Request()
             {

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades
+    public class Bitfinex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders, ICreateOrder
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.bitfinex.com/v1/");
         readonly Uri ApiPublicV2 = new Uri("https://api-pub.bitfinex.com/v2/");
@@ -42,6 +42,7 @@ namespace AgentBit.Ccxt
                 { "DRK", "DRK" },
                 { "EDO", "PNT" },
                 { "EUT", "EURT" },
+                { "EUS", "EURS" },
                 { "GSD", "GUSD" },
                 { "HOT", "Hydro Protocol" },
                 { "IOS", "IOST" },
@@ -206,7 +207,9 @@ namespace AgentBit.Ccxt
         {
             var nonce = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
 
-            var data = $"/api/{request.Path}{nonce}{JsonSerializer.Serialize(request.Params)}";
+            var data = $"/api/{request.Path}{nonce}";
+            if (request.Params.Count != 0)
+                data += JsonSerializer.Serialize(request.Params);
             var signature = GetHmac<HMACSHA384>(data, ApiSecret);
             request.Headers.Add("bfx-nonce", nonce);
             request.Headers.Add("bfx-apikey", ApiKey);
@@ -303,6 +306,95 @@ namespace AgentBit.Ccxt
             }
 
             return result.ToArray();
+        }
+
+        public async Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV2,
+                Path = "v2/auth/r/orders/",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>()
+                {
+                }
+            }).ConfigureAwait(false);
+
+            var markets = await FetchMarkets();
+
+            var ordersJson = JsonSerializer.Deserialize<JsonElement[][]>(response.Text);
+
+            var result = new List<Order>();
+            foreach (var item in ordersJson)
+            {
+                var market = markets.FirstOrDefault(m => "t" + m.Id == item[3].GetString());
+                if (market == null)
+                    continue;
+
+                var order = new Order();
+                order.Id = item[0].GetUInt64().ToString(CultureInfo.InvariantCulture);
+                order.ClientId = item[2].GetInt64().ToString(CultureInfo.InvariantCulture);
+                order.Timestamp = item[5].GetUInt64();
+                order.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(order.Timestamp);
+                order.Symbol = market.Symbol;
+                order.Side = item[7].GetDecimal() > 0 ? Side.Buy : Side.Sell;
+                order.Remaining = Math.Abs(item[6].GetDecimal());
+                order.Amount = Math.Abs(item[7].GetDecimal());
+                order.Filled = order.Amount - order.Remaining;
+                order.Price = item[16].GetDecimal();
+                order.Cost = order.Price * order.Amount;
+
+                var status = item[13].GetString();
+                if (status == "ACTIVE" || status == "PARTIALLY")
+                    order.Status = OrderStatus.Open;
+                else if (status == "EXECUTED")
+                    order.Status = OrderStatus.Closed;
+                else
+                    order.Status = OrderStatus.Canceled;
+
+                var type = item[8].GetString();
+                if (type == "LIMIT")
+                    order.Type = OrderType.Limit;
+                else if (type == "MARKET")
+                    order.Type = OrderType.Market;
+                else
+                    order.Type = OrderType.Other;
+
+                order.Info = item;
+
+                result.Add(order);
+            }
+
+            return result.Where(m => m.Status == OrderStatus.Open).ToArray();
+        }
+
+        public async Task<string> CreateOrder(string symbol, OrderType type, Side side, decimal amount, decimal price = 0)
+        {
+            var markets = await FetchMarkets();
+            var market = markets.First(market => market.Symbol == symbol);
+
+            var amountParameter = side == Side.Buy ? amount : -amount;
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV2,
+                Path = "v2/auth/w/order/submit",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>()
+                {
+                    ["pair"] = market.Id,
+                    ["type"] = $"EXCHANGE {type.ToString().ToUpper()}",
+                    ["price"] = price.ToString(CultureInfo.InvariantCulture),
+                    ["amount"] = amountParameter.ToString(CultureInfo.InvariantCulture)
+                }
+            }).ConfigureAwait(false);
+
+            var ordersJson = JsonSerializer.Deserialize<JsonElement[]>(response.Text);
+            var orderJson = ordersJson[4].EnumerateArray().First().EnumerateArray().ToArray();
+
+            return orderJson[0].GetUInt64().ToString(CultureInfo.InvariantCulture);
         }
 
         public class BitfinexBalance

@@ -313,8 +313,8 @@ namespace AgentBit.Ccxt
                 Params = new Dictionary<string, object>()
                 {
                     ["pair"] = market.Id,
-                    ["quantity"] = amount,
-                    ["price"] = price,
+                    ["quantity"] = Math.Round(amount, market.AmountPrecision),
+                    ["price"] = Math.Round(price, market.PricePrecision),
                     ["type"] = parameterType
                 }
             }).ConfigureAwait(false);

@@ -19,7 +19,8 @@ namespace AgentBit.Ccxt.Base
     public enum OrderType
     {
         Limit,
-        Market
+        Market,
+        Other
     }
 
     public enum OrderStatus
