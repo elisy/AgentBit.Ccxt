@@ -323,7 +323,7 @@ namespace AgentBit.Ccxt
             if (!jsonResponse.result)
                 throw new ExchangeError(jsonResponse.error);
             else
-                return jsonResponse.client_id.ToString(CultureInfo.InvariantCulture);
+                return jsonResponse.order_id.ToString(CultureInfo.InvariantCulture);
         }
 
 
@@ -331,8 +331,8 @@ namespace AgentBit.Ccxt
         {
             public bool result { get; set; }
             public string error { get; set; }
-            public uint order_id { get; set; }
-            public uint client_id { get; set; }
+            public ulong order_id { get; set; }
+            public ulong client_id { get; set; }
         }
 
         public class ExmoOpenOrder
