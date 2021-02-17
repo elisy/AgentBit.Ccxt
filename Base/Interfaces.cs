@@ -93,7 +93,7 @@ namespace AgentBit.Ccxt.Base
     /// </summary>
     public interface IFetchMyTrades : IPrivateAPI
     {
-        public Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100);
+        public Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000);
     }
 
     public interface IFetchOHLCV
@@ -119,7 +119,7 @@ namespace AgentBit.Ccxt.Base
 
     public interface IFetchOrders
     {
-        public Task<Order[]> FetchOrders(DateTime since, IEnumerable<string> symbols = null, uint limit = 100);
+        public Task<Order[]> FetchOrders(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000);
     }
 
     public interface IFetchOrderTrades

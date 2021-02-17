@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders
+    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOrders, IFetchOpenOrders
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
         readonly Uri ApiPrivateV1 = new Uri("https://cex.io/api/");
@@ -171,82 +171,50 @@ namespace AgentBit.Ccxt
                           let valueObject = (JsonElement)balance.Value
                           where valueObject.ValueKind == JsonValueKind.Object
                           select new { Asset = balance.Key, Balance = valueObject })
-                          .ToDictionary(m=> GetCommonCurrencyCode(m.Asset.ToUpper()), 
-                            m => new BalanceAccount() { 
-                                Free = JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("available").GetString()), 
+                          .ToDictionary(m => GetCommonCurrencyCode(m.Asset.ToUpper()),
+                            m => new BalanceAccount()
+                            {
+                                Free = JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("available").GetString()),
                                 Total = JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("available").GetString()) + JsonSerializer.Deserialize<decimal>(m.Balance.GetProperty("orders").GetString())
                             });
             return result;
         }
 
-        public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100)
+        public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000)
         {
-            var response = await Request(new Base.Request()
-            {
-                ApiType = "private",
-                BaseUri = ApiPrivateV1,
-                Path = "archived_orders/",
-                Method = HttpMethod.Post,
-                Params = new Dictionary<string, object>() { ["dateFrom"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds }
-            }).ConfigureAwait(false);
+            //Cex API does not contains get trades method
+            var orders = await FetchOrders(since, symbols, limit);
 
-            var markets = await FetchMarkets();
+            var result = (from order in orders
+                          where order.Status == OrderStatus.Closed || (order.Status == OrderStatus.Open && order.Remaining != order.Amount)
+                          let jsonOrder = (JsonElement)order.Info
+                          let symbol2 = jsonOrder.GetProperty("symbol2").GetString()
+                          //total amount in current currency (Maker)
+                          let makerAmountCurrency2 = jsonOrder.TryGetProperty("ta:" + symbol2.ToUpper(), out var ta) ? Convert.ToDecimal(ta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0
+                          //total amount in current currency (Taker)
+                          let takerAmountCurrency2 = jsonOrder.TryGetProperty("tta:" + symbol2.ToUpper(), out var tta) ? Convert.ToDecimal(tta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0
+                          let total = makerAmountCurrency2 + takerAmountCurrency2
+                          let feeMaker = jsonOrder.TryGetProperty("fa:" + symbol2.ToUpper(), out var fa) ? Convert.ToDecimal(fa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0
+                          let feeTaker = jsonOrder.TryGetProperty("tfa:" + symbol2.ToUpper(), out var tfa) ? Convert.ToDecimal(tfa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0
+                          let feeCost = feeMaker + feeTaker
+                          let feeRate = Math.Abs(Math.Round(feeCost / ((order.Amount - order.Remaining) * order.Price), 4))
+                          select new MyTrade()
+                          {
+                              Id = order.Id,
+                              OrderId = order.Id,
+                              Timestamp = order.Timestamp,
+                              DateTime = order.DateTime,
+                              Symbol = order.Symbol,
+                              Side = order.Side,
+                              Amount = order.Amount - order.Remaining,
+                              Price = total / (order.Amount - order.Remaining),
+                              FeeCost = feeCost,
+                              FeeCurrency = GetCommonCurrencyCode(symbol2),
+                              FeeRate = feeRate,
+                              Info = order.Info
+                          }).ToArray();
 
-            var ordersJson = JsonSerializer.Deserialize<JsonElement[]>(response.Text);
-
-            var result = new List<MyTrade>();
-            foreach (var item in ordersJson)
-            {
-                //Order status ('d' = done, fully executed OR 'c' = canceled, not executed OR 'cd' = cancel-done, partially executed OR 'a' = active, created)
-                var status = item.GetProperty("status").GetString();
-                if (status == "c")
-                    continue;
-
-                var symbol1 = item.GetProperty("symbol1").GetString();
-                var symbol2 = item.GetProperty("symbol2").GetString();
-
-                var market = markets.FirstOrDefault(m => m.Id == $"{symbol1}/{symbol2}" );
-                if (market == null)
-                    continue;
-
-                var amount = Convert.ToDecimal(item.GetProperty("amount").GetString(), CultureInfo.InvariantCulture);
-                //pending amount (if partially executed)
-                var remains = Convert.ToDecimal(item.GetProperty("remains").GetString(), CultureInfo.InvariantCulture);
-
-                //total amount in current currency (Maker)
-                var makerAmountCurrency2 = item.TryGetProperty("ta:" + symbol2.ToUpper(), out var ta) ? Convert.ToDecimal(ta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
-                //total amount in current currency (Taker)
-                var takerAmountCurrency2 = item.TryGetProperty("tta:" + symbol2.ToUpper(), out var tta) ? Convert.ToDecimal(tta.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
-                var total = makerAmountCurrency2 + takerAmountCurrency2;
-
-                //fee amount in current currency (Maker)
-                var feeMaker = item.TryGetProperty("fa:" + symbol2.ToUpper(), out var fa) ? Convert.ToDecimal(fa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
-                //fee amount in current currency (Taker)
-                var feeTaker = item.TryGetProperty("tfa:" + symbol2.ToUpper(), out var tfa) ? Convert.ToDecimal(tfa.GetString(), CultureInfo.InvariantCulture) : (decimal)0.0;
-                var fee = feeMaker + feeTaker;
-
-                var time = Convert.ToDateTime(item.GetProperty("time").GetString());
-
-                var myTrade = new MyTrade
-                {
-                    Id = item.GetProperty("id").GetString(),
-                    Timestamp = (ulong)time.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
-                    DateTime = time,
-                    Symbol = market.Symbol,
-                    OrderId = item.GetProperty("id").GetString(),
-                    Side = item.GetProperty("type").GetString() == "buy" ? Side.Buy : Side.Sell,
-                    Amount = amount - remains,
-                    Price = total / (amount - remains),
-                    FeeCost = fee,
-                    FeeCurrency = GetCommonCurrencyCode(symbol2),
-                    Info = item
-                };
-                myTrade.FeeRate = Math.Abs(Math.Round(myTrade.FeeCost / (myTrade.Amount * myTrade.Price), 4));
-
-                result.Add(myTrade);
-            }
-
-            return result.ToArray();
+            return result;
         }
 
         public async Task<Order[]> FetchOpenOrders(IEnumerable<string> symbols = null)
@@ -290,6 +258,71 @@ namespace AgentBit.Ccxt
             }
             return result.ToArray();
         }
+
+
+        public async Task<Order[]> FetchOrders(DateTime since, IEnumerable<string> symbols = null, uint limit = 1000)
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = "archived_orders/",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>() { ["dateFrom"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds }
+            }).ConfigureAwait(false);
+
+            var markets = await FetchMarkets();
+
+            var ordersJson = JsonSerializer.Deserialize<JsonElement[]>(response.Text);
+
+            var result = new List<Order>();
+            foreach (var item in ordersJson)
+            {
+                //Order status ('d' = done, fully executed OR 'c' = canceled, not executed OR 'cd' = cancel-done, partially executed OR 'a' = active, created)
+                var statusProperty = item.GetProperty("status").GetString();
+                var status = OrderStatus.Canceled;
+                if (statusProperty == "d" || statusProperty == "cd")
+                    status = OrderStatus.Closed;
+                else if (statusProperty == "c")
+                    status = OrderStatus.Canceled;
+                else
+                    status = OrderStatus.Open;
+
+                var symbol1 = item.GetProperty("symbol1").GetString();
+                var symbol2 = item.GetProperty("symbol2").GetString();
+
+                var market = markets.FirstOrDefault(m => m.Id == $"{symbol1}/{symbol2}");
+                if (market == null)
+                    continue;
+
+                var amount = Convert.ToDecimal(item.GetProperty("amount").GetString(), CultureInfo.InvariantCulture);
+                //pending amount (if partially executed)
+                var remains = Convert.ToDecimal(item.GetProperty("remains").GetString(), CultureInfo.InvariantCulture);
+                var price = Convert.ToDecimal(item.GetProperty("price").GetString(), CultureInfo.InvariantCulture);
+
+                var time = Convert.ToDateTime(item.GetProperty("time").GetString());
+
+                var order = new Order()
+                {
+                    Id = item.GetProperty("id").GetString(),
+                    Timestamp = (ulong)time.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
+                    DateTime = time,
+                    Symbol = market.Symbol,
+                    Side = item.GetProperty("type").GetString() == "buy" ? Side.Buy : Side.Sell,
+                    Status = status,
+                    Amount = amount,
+                    Price = price,
+                    Cost = amount * price,
+                    Remaining = remains,
+                    Info = item
+                };
+
+                result.Add(order);
+            }
+
+            return result.ToArray();
+        }
+
 
         public class CexOpenOrder
         {
