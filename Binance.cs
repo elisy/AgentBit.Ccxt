@@ -66,14 +66,15 @@ namespace AgentBit.Ccxt
                     {
                         newItem.PriceMin = JsonSerializer.Deserialize<decimal>(priceFilter["minPrice"].ToString());
                         newItem.PriceMax = JsonSerializer.Deserialize<decimal>(priceFilter["maxPrice"].ToString());
+                        newItem.PricePrecision = (int)Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(priceFilter["tickSize"].ToString())));
                     }
 
                     var lotFilter = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "LOT_SIZE");
                     if (lotFilter != null)
                     {
-                        newItem.AmountPrecision = (int)Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
                         newItem.AmountMin = JsonSerializer.Deserialize<decimal>(lotFilter["minQty"].ToString());
                         newItem.AmountMax = JsonSerializer.Deserialize<decimal>(lotFilter["maxQty"].ToString());
+                        newItem.AmountPrecision = (int)Math.Abs(Math.Log10(JsonSerializer.Deserialize<double>(lotFilter["stepSize"].ToString())));
                     }
 
                     var minNotional = market.filters.FirstOrDefault(m => m.ContainsKey("filterType") && m["filterType"].ToString() == "MIN_NOTIONAL");
