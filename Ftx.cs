@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace AgentBit.Ccxt
 {
-    public class Ftx : Exchange, IPublicAPI
+    public class Ftx : Exchange, IPublicAPI, IFetchTickers
     {
         readonly Uri ApiV1Public = new Uri("https://ftx.com/api/");
 
@@ -20,7 +20,8 @@ namespace AgentBit.Ccxt
             //Please do not send more than 30 requests per second
             RateLimit = 1 * 1000 / 30;
 
-            CommonCurrencies = new Dictionary<string, string>() {
+            CommonCurrencies = new Dictionary<string, string>()
+            {
             };
         }
 
@@ -77,6 +78,56 @@ namespace AgentBit.Ccxt
             return _markets;
         }
 
+        public async Task<Ticker[]> FetchTickers(string[] symbols = null)
+        {
+            var markets = await FetchMarkets().ConfigureAwait(false);
+
+            var response = await Request(new Base.Request()
+            {
+                BaseUri = ApiV1Public,
+                Path = "markets",
+                ApiType = "public",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+
+            var responseJson = JsonSerializer.Deserialize<FtxMarketsResult<FtxMarket[]>>(response.Text, new JsonSerializerOptions() { IgnoreNullValues = true });
+            var tickers = responseJson.result;
+
+            var result = new List<Ticker>();
+            foreach (var item in tickers)
+            {
+                if (item.type != "spot")
+                    continue;
+
+                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.name);
+                if (market == null)
+                    continue;
+
+                Ticker ticker = new Ticker();
+
+                ticker.DateTime = DateTime.UtcNow;
+                ticker.Timestamp = (ulong)((DateTimeOffset)ticker.DateTime).ToUnixTimeMilliseconds();
+                ticker.Symbol = market.Symbol;
+                ticker.Bid = item.bid;
+                ticker.Ask = item.ask;
+                ticker.Average = (ticker.Bid + ticker.Ask) / 2;
+                ticker.High = item.change1h < 0 ? ticker.Average - item.change1h : ticker.Ask;
+                ticker.Low = item.change1h > 0 ? ticker.Average - item.change1h : ticker.Bid;
+                ticker.Last = item.last.HasValue ? item.last.Value : ticker.Average;
+                ticker.Close = ticker.Last;
+                ticker.BaseVolume = item.quoteVolume24h / ticker.Average;
+                ticker.QuoteVolume = item.quoteVolume24h;
+                ticker.Info = item;
+
+                result.Add(ticker);
+            }
+            if (symbols == null)
+                return result.ToArray();
+            else
+                return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
+
+        }
+
         public override void Sign(Request request)
         {
             if (request.ApiType != "private")
@@ -105,6 +156,8 @@ namespace AgentBit.Ccxt
             public decimal priceIncrement { get; set; }
             public decimal sizeIncrement { get; set; }
             public bool restricted { get; set; }
+            public decimal quoteVolume24h { get; set; }
+            public decimal change1h { get; set; }
         }
     }
 }
