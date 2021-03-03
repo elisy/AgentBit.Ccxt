@@ -22,6 +22,7 @@ namespace AgentBit.Ccxt
 
             CommonCurrencies = new Dictionary<string, string>()
             {
+                { "CRON", "CRONOS" } //Chronos Group Inc (CRON)
             };
         }
 
