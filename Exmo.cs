@@ -18,6 +18,7 @@ namespace AgentBit.Ccxt
     public class Exmo : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOpenOrders, ICreateOrder
     {
         readonly Uri ApiPublicV1 = new Uri("https://api.exmo.com/v1/");
+        readonly Uri ApiPublicV1_1 = new Uri("https://api.exmo.com/v1.1/");
         readonly Uri ApiPrivateV1 = new Uri("https://api.exmo.com/v1/");
         readonly Uri ApiPrivateV1_1 = new Uri("https://api.exmo.com/v1.1/");
 
@@ -34,7 +35,7 @@ namespace AgentBit.Ccxt
             {
                 var detailsResponse = await Request(new Base.Request()
                 {
-                    BaseUri = ApiPublicV1,
+                    BaseUri = ApiPublicV1_1,
                     Path = "pair_settings",
                     ApiType = "public",
                     Method = HttpMethod.Get
@@ -61,7 +62,7 @@ namespace AgentBit.Ccxt
                     newItem.AmountMin = JsonSerializer.Deserialize<decimal>(market.Value.min_quantity);
                     newItem.AmountMax = JsonSerializer.Deserialize<decimal>(market.Value.max_quantity);
 
-                    newItem.PricePrecision = 8;
+                    newItem.PricePrecision = market.Value.price_precision;
                     newItem.AmountPrecision = 8;
 
                     newItem.FeeTaker = 0.4M / 100;
@@ -386,6 +387,9 @@ namespace AgentBit.Ccxt
             public string max_price { get; set; }
             public string min_amount { get; set; }
             public string max_amount { get; set; }
+            public int price_precision { get; set; }
+            public string commission_taker_percent { get; set; }
+            public string commission_maker_percent { get; set; }
         }
 
         public class ExmoTicker
