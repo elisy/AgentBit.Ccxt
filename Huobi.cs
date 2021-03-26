@@ -23,7 +23,9 @@ namespace AgentBit.Ccxt
             CommonCurrencies = new Dictionary<string, string>() {
                 { "GET", "Themis" }, // conflict with GET (Guaranteed Entrance Token, GET Protocol)
                 { "HOT", "Hydro Protocol" }, // conflict with HOT (Holo) https://github.com/ccxt/ccxt/issues/4929
-                { "PNT", "Penta" }
+                { "PNT", "Penta" },
+                { "SBTC", "Super Bitcoin" },
+                { "BIFI", "Bitcoin File" } // conflict with Beefy.Finance https://github.com/ccxt/ccxt/issues/8706
             };
         }
 
