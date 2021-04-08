@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOrders, IFetchOpenOrders
+    public class Cex : Exchange, IPublicAPI, IPrivateAPI, IFetchTickers, IFetchTicker, IFetchBalance, IFetchMyTrades, IFetchOrders, IFetchOpenOrders, ICreateOrder
     {
         readonly Uri ApiPublicV1 = new Uri("https://cex.io/api/");
         readonly Uri ApiPrivateV1 = new Uri("https://cex.io/api/");
@@ -323,6 +323,48 @@ namespace AgentBit.Ccxt
             return result.ToArray();
         }
 
+        public async Task<string> CreateOrder(string symbol, OrderType type, Side side, decimal amount, decimal price = 0)
+        {
+            var markets = await FetchMarkets();
+            var market = markets.First(market => market.Symbol == symbol);
+
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiPrivateV1,
+                Path = $"place_order/{market.BaseId}/{market.QuoteId}/",
+                Method = HttpMethod.Post,
+                Params = new Dictionary<string, object>() { 
+                    ["type"] = side.ToString().ToLower(),
+                    ["price"] = Math.Round(price, market.PricePrecision).ToString(CultureInfo.InvariantCulture),
+                    ["amount"] = Math.Round(amount, 8).ToString(CultureInfo.InvariantCulture)
+                }
+            }).ConfigureAwait(false);
+
+            if (response.Text.Contains("\"error\""))
+                throw new ExchangeError(JsonSerializer.Deserialize<CexError>(response.Text).error);
+
+            var createdOrder = JsonSerializer.Deserialize<CexPlaceOrder>(response.Text);
+            return createdOrder.id;
+        }
+
+
+        public class CexError
+        {
+            public string error { get; set; }
+        }
+
+
+        public class CexPlaceOrder
+        {
+            public bool complete;
+            public string id;
+            public decimal time;
+            public decimal pending;
+            public decimal amount;
+            public string type;
+            public decimal price;
+        }
 
         public class CexOpenOrder
         {
