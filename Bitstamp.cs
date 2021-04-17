@@ -110,7 +110,7 @@ namespace AgentBit.Ccxt
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
             if (symbols == null)
-                symbols = (await FetchMarkets().ConfigureAwait(false)).Select(m => m.Symbol).ToArray();
+                symbols = (await FetchMarkets().ConfigureAwait(false)).Where(m => m.Active).Select(m => m.Symbol).ToArray();
 
             //var result = new List<Ticker>(symbols.Length);
             //foreach (var symbol in symbols)

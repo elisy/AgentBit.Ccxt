@@ -103,18 +103,20 @@ namespace AgentBit.Ccxt
                 var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.name);
                 if (market == null)
                     continue;
+                if (!item.bid.HasValue || !item.ask.HasValue || !item.last.HasValue)
+                    continue;
 
                 Ticker ticker = new Ticker();
 
                 ticker.DateTime = DateTime.UtcNow;
                 ticker.Timestamp = (ulong)((DateTimeOffset)ticker.DateTime).ToUnixTimeMilliseconds();
                 ticker.Symbol = market.Symbol;
-                ticker.Bid = item.bid;
-                ticker.Ask = item.ask;
+                ticker.Bid = item.bid.Value;
+                ticker.Ask = item.ask.Value;
                 ticker.Average = (ticker.Bid + ticker.Ask) / 2;
                 ticker.High = item.change1h < 0 ? ticker.Average - item.change1h : ticker.Ask;
                 ticker.Low = item.change1h > 0 ? ticker.Average - item.change1h : ticker.Bid;
-                ticker.Last = item.last.HasValue ? item.last.Value : ticker.Average;
+                ticker.Last = item.last.Value;
                 ticker.Close = ticker.Last;
                 ticker.BaseVolume = item.quoteVolume24h / ticker.Average;
                 ticker.QuoteVolume = item.quoteVolume24h;
@@ -149,8 +151,9 @@ namespace AgentBit.Ccxt
             public string baseCurrency { get; set; }
             public string quoteCurrency { get; set; }
             public bool enabled { get; set; }
-            public decimal ask { get; set; }
-            public decimal bid { get; set; }
+            public decimal? price { get; set; }
+            public decimal? ask { get; set; }
+            public decimal? bid { get; set; }
             public decimal? last { get; set; }
             public decimal minProvideSize { get; set; }
             public bool postOnly { get; set; }
