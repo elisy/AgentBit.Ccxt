@@ -415,7 +415,8 @@ namespace AgentBit.Ccxt
             public int precision { get; set; }
             public int scale { get; set; }
             public string minimumCurrencyAmount { get; set; }
-            public decimal minimalWithdrawalAmount { get; set; }
+            //Some values are string, some decimals -1
+            //public string minimalWithdrawalAmount { get; set; }
         }
 
 
