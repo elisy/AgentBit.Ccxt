@@ -60,6 +60,7 @@ namespace AgentBit.Ccxt
                 { "SPK", "SPANK" },
                 { "STJ", "STORJ" },
                 { "TSD", "TUSD" },
+                { "YGG", "YEED" }, // conflict with Yield Guild Games
                 { "YYW", "YOYOW" },
                 { "UDC", "USDC" },
                 { "UST", "USDT" },
