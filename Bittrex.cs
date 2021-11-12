@@ -22,7 +22,9 @@ namespace AgentBit.Ccxt
             RateLimit = 1 * 1000;
 
             CommonCurrencies = new Dictionary<string, string>() {
+                { "BIFI", "Bifrost Finance" },
                 { "MER", "Mercury" }, // conflict with Mercurial Finance
+                { "PROS", "Pros.Finance" },
                 { "REPV2", "REP" },
                 { "TON", "Tokamak Network" }
             };
