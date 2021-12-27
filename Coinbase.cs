@@ -203,6 +203,7 @@ namespace AgentBit.Ccxt
                                     Info = jsonTicker
                                 };
                                 ticker.Timestamp = (uint)(ticker.DateTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                                ticker.QuoteVolume = ticker.BaseVolume * (ticker.Low + ticker.High) / 3;
                                 result[market.Symbol] = ticker;
                             }
                             catch (Exception e)
