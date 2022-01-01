@@ -94,9 +94,9 @@ namespace AgentBit.Ccxt.Base
                 HttpResponseMessage response = await _httpClient.SendAsync(message).ConfigureAwait(false);
                 return await HandleResponse(response, request).ConfigureAwait(false);
             }
-            catch (WebException e)
+            catch (WebException)
             {
-                throw e;
+                throw;
             }
             
         }
