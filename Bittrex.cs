@@ -26,7 +26,8 @@ namespace AgentBit.Ccxt
                 { "MER", "Mercury" }, // conflict with Mercurial Finance
                 { "PROS", "Pros.Finance" },
                 { "REPV2", "REP" },
-                { "TON", "Tokamak Network" }
+                { "TON", "Tokamak Network" },
+                { "REAL", "REALLINK" } //Conflict with FTX Realy
             };
         }
 
