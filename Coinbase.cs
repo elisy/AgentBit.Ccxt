@@ -174,20 +174,6 @@ namespace AgentBit.Ccxt
                                 if (String.IsNullOrEmpty(jsonTicker.time))
                                     continue;
 
-                                //var ticker = new Ticker()
-                                //{
-                                //    Symbol = market.Symbol,
-                                //    DateTime = DateTime.Parse(jsonTicker.time, null, System.Globalization.DateTimeStyles.RoundtripKind),
-                                //    High = Convert.ToDecimal(jsonTicker.high_24h, CultureInfo.InvariantCulture),
-                                //    Low = Convert.ToDecimal(jsonTicker.low_24h, CultureInfo.InvariantCulture),
-                                //    Bid = Convert.ToDecimal(jsonTicker.best_bid, CultureInfo.InvariantCulture),
-                                //    Ask = Convert.ToDecimal(jsonTicker.best_ask, CultureInfo.InvariantCulture),
-                                //    Open = Convert.ToDecimal(jsonTicker.open_24h, CultureInfo.InvariantCulture), //"open_24h":"7.3e-7"
-                                //    Close = Convert.ToDecimal(jsonTicker.price, CultureInfo.InvariantCulture),
-                                //    Last = Convert.ToDecimal(jsonTicker.price, CultureInfo.InvariantCulture),
-                                //    BaseVolume = Convert.ToDecimal(jsonTicker.volume_24h, CultureInfo.InvariantCulture),
-                                //    Info = jsonTicker
-                                //};
                                 var ticker = new Ticker()
                                 {
                                     Symbol = market.Symbol,
