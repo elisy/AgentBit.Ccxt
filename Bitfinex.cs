@@ -255,9 +255,10 @@ namespace AgentBit.Ccxt
 
         public async Task<MyTrade[]> FetchMyTrades(DateTime since, IEnumerable<string> symbols = null, uint limit = 100)
         {
-            //Number of records (Max: 10000)
-            if (limit > 10000)
-                limit = 10000;
+            //https://docs.bitfinex.com/reference#rest-auth-trades
+            //Number of records (Max: 2500)
+            if (limit > 2500)
+                limit = 2500;
 
             var response = await Request(new Base.Request()
             {
@@ -267,8 +268,8 @@ namespace AgentBit.Ccxt
                 Method = HttpMethod.Post,
                 Params = new Dictionary<string, object>()
                 {
-                    ["start"] = since.Subtract(new DateTime(1970, 1, 1)).TotalSeconds.ToString(CultureInfo.InvariantCulture),
-                    //["limit"] = limit //Error when both start and limit
+                    ["start"] = since.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds.ToString(CultureInfo.InvariantCulture),
+                    ["limit"] = limit
                 }
             }).ConfigureAwait(false);
 
