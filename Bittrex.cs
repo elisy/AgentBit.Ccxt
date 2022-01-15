@@ -23,6 +23,7 @@ namespace AgentBit.Ccxt
 
             CommonCurrencies = new Dictionary<string, string>() {
                 { "BIFI", "Bifrost Finance" },
+                { "MEME", "Memetic" }, // conflict with Meme Inu OkEX
                 { "MER", "Mercury" }, // conflict with Mercurial Finance
                 { "PLAY", "PlayChip" }, //Conflict with Kucoin PLAY HEROcoin
                 { "PROS", "Pros.Finance" },
