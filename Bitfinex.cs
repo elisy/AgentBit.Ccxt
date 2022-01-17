@@ -348,7 +348,9 @@ namespace AgentBit.Ccxt
                 order.Cost = order.Price * order.Amount;
 
                 var status = item[13].GetString();
-                if (status == "ACTIVE" || status == "PARTIALLY")
+                if (status == "ACTIVE")
+                    order.Status = OrderStatus.Open;
+                else if (status.Contains("PARTIALLY FILLED", StringComparison.InvariantCulture))
                     order.Status = OrderStatus.Open;
                 else if (status == "EXECUTED")
                     order.Status = OrderStatus.Closed;
