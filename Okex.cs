@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
+    [Obsolete("Okex was rebrended to Okx")]
     public class Okex : Exchange, IPublicAPI, IFetchTickers, IFetchTicker
     {
         readonly Uri ApiV3 = new Uri("https://www.okex.com/api/spot/v3/");
