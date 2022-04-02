@@ -27,6 +27,7 @@ namespace AgentBit.Ccxt
             RateLimit = 334;
 
             CommonCurrencies = new Dictionary<string, string>() {
+                { "BULL", "Bullieverse" }, //Conflict with 3X Long Bitcoin Token
                 { "HOT", "HOTNOW" },
                 { "EDGE", "DADI" },
                 { "WAX", "WAXP" },

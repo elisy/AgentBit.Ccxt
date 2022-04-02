@@ -27,6 +27,10 @@ namespace AgentBit.Ccxt
             //https://exmo.com/en/news_view?id=1472
             //The maximum number of API requests from one user or one IP address can reach 180 per minute
             RateLimit = (int)60 / 180 * 1000;
+
+            CommonCurrencies = new Dictionary<string, string>() {
+                { "GMT", "GMT Token" } // conflict with STEPN
+            };
         }
 
         public override async Task<Market[]> FetchMarkets()
