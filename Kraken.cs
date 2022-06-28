@@ -27,6 +27,7 @@ namespace AgentBit.Ccxt
             RateLimit = PublicRateLimit; //See Throttle overriden method
 
             CommonCurrencies = new Dictionary<string, string>() {
+                { "LUNA", "LUNC" },
                 { "XBT", "BTC" },
                 { "XDG", "DOGE" }
             };

@@ -21,6 +21,7 @@ namespace AgentBit.Ccxt
             RateLimit = 2 * 1000 / 20;
 
             CommonCurrencies = new Dictionary<string, string>() {
+                { "BULL", "Bullieverse" }, //Conflict with 3X Long Bitcoin Token
                 { "GET", "Themis" }, // conflict with GET (Guaranteed Entrance Token, GET Protocol)
                 { "GTC", "Game.com" }, // conflict with Gitcoin and Gastrocoin
                 { "HIT", "HitChain" },

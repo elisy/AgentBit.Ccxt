@@ -49,6 +49,8 @@ namespace AgentBit.Ccxt
                 { "IOS", "IOST" },
                 { "IOT", "IOTA" },
                 { "IQX", "IQ" },
+                { "LUNA", "LUNC" },
+                { "LUNA2", "LUNA" },
                 { "MIT", "MITH" },
                 { "MNA", "MANA" },
                 { "NCA", "NCASH" },
