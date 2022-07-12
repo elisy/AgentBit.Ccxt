@@ -28,6 +28,7 @@ namespace AgentBit.Ccxt
 
             CommonCurrencies = new Dictionary<string, string>() {
                 { "LUNA", "LUNC" },
+                { "UST", "USTC" },
                 { "XBT", "BTC" },
                 { "XDG", "DOGE" }
             };

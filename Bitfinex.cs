@@ -63,6 +63,7 @@ namespace AgentBit.Ccxt
                 { "SPK", "SPANK" },
                 { "STJ", "STORJ" },
                 { "TSD", "TUSD" },
+                { "TERRAUST", "USTC" },
                 { "YGG", "YEED" }, // conflict with Yield Guild Games
                 { "YYW", "YOYOW" },
                 { "UDC", "USDC" },
@@ -127,7 +128,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeMaker = 0.1M / 100;
                     newItem.FeeTaker = 0.2M / 100;
 
-                    newItem.Url = $"https://www.bitfinex.com/t/{newItem.BaseId}:{newItem.QuoteId}?refcode=BbA2Zpxdo";
+                    newItem.Url = $"https://trading.bitfinex.com/t/{newItem.BaseId}:{newItem.QuoteId}?refcode=BbA2Zpxdo";
                     newItem.Margin = market.margin;
 
                     result.Add(newItem);
