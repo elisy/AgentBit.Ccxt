@@ -21,6 +21,7 @@ namespace AgentBit.Ccxt.Base
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
         public string ApiUserId { get; set; }
+        public string ApiPassword { get; set; }
 
         public Dictionary<string, string> CommonCurrencies { get; set; }
 
@@ -173,6 +174,21 @@ namespace AgentBit.Ccxt.Base
                 hashBytes = hash.ComputeHash(textBytes);
 
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        protected string GetHmacBase64<T>(string text, string key) where T : HMAC
+        {
+            ASCIIEncoding encoding = new ASCIIEncoding();
+
+            Byte[] textBytes = encoding.GetBytes(text);
+            Byte[] keyBytes = encoding.GetBytes(key);
+
+            Byte[] hashBytes;
+
+            using (var hash = (T)Activator.CreateInstance(typeof(T), new object[] { keyBytes }))
+                hashBytes = hash.ComputeHash(textBytes);
+
+            return Convert.ToBase64String(hashBytes);
         }
 
     }

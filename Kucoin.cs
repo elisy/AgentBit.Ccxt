@@ -1,24 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.WebSockets;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using AgentBit.Ccxt.Base;
 using Microsoft.Extensions.Logging;
 
 namespace AgentBit.Ccxt
 {
-    public class Kucoin : Exchange, IPublicAPI, IFetchTickers, IFetchTicker
+    public class Kucoin : Exchange, IPublicAPI, IFetchTickers, IFetchTicker, IFetchBalance
     {
         readonly Uri ApiV1 = new Uri("https://api.kucoin.com/api/v1/");
 
@@ -35,6 +28,30 @@ namespace AgentBit.Ccxt
                 { "TRY", "TRIAS" },
                 { "VAI", "VAIOT" }
             };
+        }
+
+        public async Task<Dictionary<string, BalanceAccount>> FetchBalance()
+        {
+            var response = await Request(new Base.Request()
+            {
+                ApiType = "private",
+                BaseUri = ApiV1,
+                Path = "accounts",
+                Method = HttpMethod.Get
+            }).ConfigureAwait(false);
+            var serverResponse = JsonSerializer.Deserialize<KucoinResponse<KucoinBalance[]>>(response.Text);
+
+            var result = new Dictionary<string, BalanceAccount>();
+            foreach (var balance in serverResponse.data.Where(m => m.type == "trade"))
+            {
+                result[GetCommonCurrencyCode(balance.currency.ToUpper())] = new BalanceAccount()
+                {
+                    Free = JsonSerializer.Deserialize<decimal>(balance.available),
+                    Total = JsonSerializer.Deserialize<decimal>(balance.balance),
+                    Info = balance
+                };
+            }
+            return result;
         }
 
         public override async Task<Market[]> FetchMarkets()
@@ -157,6 +174,21 @@ namespace AgentBit.Ccxt
 
             if (request.ApiType != "private")
                 return;
+
+            var api_key = ApiKey;
+            var api_secret = ApiSecret;
+            var api_passphrase = ApiPassword;
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+            var str_to_sign = now + request.Method + "/api/v1/" + request.Path;
+
+            var signature  = GetHmacBase64<HMACSHA256>(str_to_sign, api_secret);
+            var passphrase = GetHmacBase64<HMACSHA256>(api_passphrase, api_secret);
+            request.Headers.Add("KC-API-SIGN", signature);
+            request.Headers.Add("KC-API-TIMESTAMP", now);
+            request.Headers.Add("KC-API-KEY", api_key);
+            request.Headers.Add("KC-API-PASSPHRASE", passphrase);
+            request.Headers.Add("KC-API-KEY-VERSION", "2");
         }
 
 
@@ -167,27 +199,28 @@ namespace AgentBit.Ccxt
         }
 
 
+        public class KucoinBalance
+        {
+            //https://docs.kucoin.com/#list-accounts
+            //{
+            //  "id": "5bd6e9286d99522a52e458de",  //accountId
+            //  "currency": "BTC",  //Currency
+            //  "type": "main",     //Account type, including main and trade
+            //  "balance": "237582.04299",  //Total assets of a currency
+            //  "available": "237582.032",  //Available assets of a currency
+            //  "holds": "0.01099" //Hold assets of a currency
+            //}
+            public string id { get; set; }
+            public string currency { get; set; }
+            public string type { get; set; }
+            public string balance { get; set; }
+            public string available { get; set; }
+            public string holds { get; set; }
+        }
+
+
         public class KucoinSymbol
         {
-            //https://docs.kucoin.com/#get-symbols-list
-            //  {
-            //  "symbol": "XLM-USDT",
-            //  "name": "XLM-USDT",
-            //  "baseCurrency": "XLM",
-            //  "quoteCurrency": "USDT",
-            //  "feeCurrency": "USDT",
-            //  "market": "USDS",
-            //  "baseMinSize": "0.1",
-            //  "quoteMinSize": "0.01",
-            //  "baseMaxSize": "10000000000",
-            //  "quoteMaxSize": "99999999",
-            //  "baseIncrement": "0.0001",
-            //  "quoteIncrement": "0.000001",
-            //  "priceIncrement": "0.000001",
-            //  "priceLimitRate": "0.1",
-            //  "isMarginEnabled": true,
-            //  "enableTrading": true
-            //}
             public string symbol { get; set; }
             public string name { get; set; }
             public string baseCurrency { get; set; }
