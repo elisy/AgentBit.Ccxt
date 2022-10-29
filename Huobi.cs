@@ -26,8 +26,11 @@ namespace AgentBit.Ccxt
                 { "GTC", "Game.com" }, // conflict with Gitcoin and Gastrocoin
                 { "HIT", "HitChain" },
                 { "HOT", "Hydro Protocol" }, // conflict with HOT (Holo) https://github.com/ccxt/ccxt/issues/4929
+                { "NANO", "XNO" },
                 { "PNT", "Penta" },
                 { "SBTC", "Super Bitcoin" },
+                { "SOUL", "Soulsaver" }, //Conflict with SOUL Phantasma
+                { "XNO", "Xeno NFT Hub" }, //Conflict with Nano XNO
                 { "BIFI", "Bitcoin File" } // conflict with Beefy.Finance https://github.com/ccxt/ccxt/issues/8706
             };
         }

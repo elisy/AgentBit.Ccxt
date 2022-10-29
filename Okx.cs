@@ -36,6 +36,7 @@ namespace AgentBit.Ccxt
                 { "HSR", "HC" },
                 { "MAG", "Maggie" },
                 { "SBTC", "Super Bitcoin" },
+                { "STC", "Satoshi Island" },
                 { "TRADE", "Unitrade" },
                 { "YOYO", "YOYOW" },
                 { "WIN", "WinToken" }

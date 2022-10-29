@@ -22,8 +22,9 @@ namespace AgentBit.Ccxt
             CommonCurrencies = new Dictionary<string, string>() {
                 { "BIFI", "Bifrost" }, //Conflict with Beefy Finance
                 { "BULL", "Bullieverse" }, //Conflict with 3X Long Bitcoin Token
-                { "HOT", "HOTNOW" },
                 { "EDGE", "DADI" },
+                { "HOT", "HOTNOW" },
+                { "MC", "Mechaverse" }, //Conflict with Merit Circle MC
                 { "WAX", "WAXP" },
                 { "TRY", "TRIAS" },
                 { "VAI", "VAIOT" }
