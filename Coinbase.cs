@@ -53,7 +53,9 @@ namespace AgentBit.Ccxt
 
                 var result = new List<Market>();
 
-                foreach (var market in responseJson)
+                foreach (var market in responseJson
+                    .Where(m => m.id == $"{m.base_currency}-{m.quote_currency}") //Exclude "BTCAUCTION-USD" with base = "BTC"
+                    )
                 {
                     var newItem = new Market();
                     newItem.Id = market.id;
@@ -115,6 +117,7 @@ namespace AgentBit.Ccxt
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
             var markets = (await FetchMarkets().ConfigureAwait(false)).Where(m => m.Active).ToArray();
+            var a = markets.Where(m => m.Symbol == "BTC/USD").ToArray();
             var result = markets.ToDictionary(m => m.Symbol, m => (Ticker)null);
 
             var jsonSubscribe = new
