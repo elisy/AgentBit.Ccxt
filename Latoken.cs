@@ -206,7 +206,7 @@ namespace AgentBit.Ccxt
             public long created { get; set; }
             public int tier { get; set; }
             public string assetClass { get; set; }
-            public long minTransferAmount { get; set; }
+            public decimal minTransferAmount { get; set; } //May be 0E-18
         }
 
         public class LatokenPair
