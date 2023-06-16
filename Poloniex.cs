@@ -35,6 +35,7 @@ namespace AgentBit.Ccxt
                 { "BDG", "Badgercoin" },
                 { "BTM", "Bitmark" },
                 { "CON", "Coino" },
+                { "FREE", "freerossdao" },
                 { "GOLD", "GoldEagles" },
                 { "GPUC", "GPU" },
                 { "HOT", "Hotcoin" },

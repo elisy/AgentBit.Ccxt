@@ -71,6 +71,8 @@ namespace AgentBit.Ccxt
                 { "UTN", "UTNP" },
                 { "VSY", "VSYS" },
                 { "WAX", "WAXP" },
+                { "WBT", "WBTC" },
+                { "WHBT", "WBT" },
                 { "XCH", "XCHF" },
                 { "ZBT", "ZB" }
             };

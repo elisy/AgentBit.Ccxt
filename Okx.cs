@@ -35,6 +35,7 @@ namespace AgentBit.Ccxt
                 { "HOT", "Hydro Protocol" },
                 { "HSR", "HC" },
                 { "MAG", "Maggie" },
+                { "RON", "ronin" }, //Conflict with Romanian Leu
                 { "SBTC", "Super Bitcoin" },
                 { "STC", "Satoshi Island" },
                 { "TRADE", "Unitrade" },

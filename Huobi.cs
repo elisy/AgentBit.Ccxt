@@ -21,6 +21,7 @@ namespace AgentBit.Ccxt
             RateLimit = 2 * 1000 / 20;
 
             CommonCurrencies = new Dictionary<string, string>() {
+                { "BIFI", "Bitcoin File" }, // conflict with Beefy.Finance https://github.com/ccxt/ccxt/issues/8706
                 { "BULL", "Bullieverse" }, //Conflict with 3X Long Bitcoin Token
                 { "GET", "Themis" }, // conflict with GET (Guaranteed Entrance Token, GET Protocol)
                 { "GTC", "Game.com" }, // conflict with Gitcoin and Gastrocoin
@@ -28,10 +29,11 @@ namespace AgentBit.Ccxt
                 { "HOT", "Hydro Protocol" }, // conflict with HOT (Holo) https://github.com/ccxt/ccxt/issues/4929
                 { "NANO", "XNO" },
                 { "PNT", "Penta" },
+                { "QUICK", "quickswap-new" }, //Conflict with 
                 { "SBTC", "Super Bitcoin" },
                 { "SOUL", "Soulsaver" }, //Conflict with SOUL Phantasma
-                { "XNO", "Xeno NFT Hub" }, //Conflict with Nano XNO
-                { "BIFI", "Bitcoin File" } // conflict with Beefy.Finance https://github.com/ccxt/ccxt/issues/8706
+                { "STC", "satoshi-island" },
+                { "XNO", "Xeno NFT Hub" } //Conflict with Nano XNO
             };
         }
 
