@@ -21,6 +21,7 @@ namespace AgentBit.Ccxt
     public class Poloniex : Exchange, IPublicAPI, IFetchTickers, IFetchTicker
     {
         readonly Uri ApiV1Public = new Uri("https://poloniex.com/");
+        readonly Uri ApiV2Public = new Uri("https://api.poloniex.com/");
 
         public Poloniex(HttpClient httpClient, ILogger logger) : base(httpClient, logger)
         {
@@ -57,38 +58,44 @@ namespace AgentBit.Ccxt
             {
                 var response = await Request(new Base.Request()
                 {
-                    BaseUri = ApiV1Public,
-                    Path = "public?command=returnTicker",
+                    BaseUri = ApiV2Public,
+                    Path = "markets",
                     ApiType = "public",
                     Method = HttpMethod.Get
                 }).ConfigureAwait(false);
 
-                var responseJson = JsonSerializer.Deserialize<Dictionary<string, PoloniexTicker>>(response.Text);
+                var responseJson = JsonSerializer.Deserialize<PoloniexMarket[]>(response.Text);
 
                 var result = new List<Market>();
 
                 foreach (var market in responseJson)
                 {
                     var newItem = new Market();
-                    newItem.Id = market.Key;
+                    newItem.Id = market.symbol;
 
-                    var quoutes = market.Key.Split("_");
-                    newItem.BaseId = quoutes[1];
-                    newItem.QuoteId = quoutes[0];
+                    newItem.BaseId = market.baseCurrencyName;
+                    newItem.QuoteId = market.quoteCurrencyName;
 
                     newItem.Base = GetCommonCurrencyCode(newItem.BaseId.ToUpper());
                     newItem.Quote = GetCommonCurrencyCode(newItem.QuoteId.ToUpper());
 
-                    newItem.AmountPrecision = 8;
-                    newItem.PricePrecision = 8;
 
-                    newItem.Active = market.Value.isFrozen != "1";
+                    newItem.Active = market.state == "NORMAL";
+
+                    if (market.symbolTradeLimit is not null)
+                    {
+                        newItem.AmountPrecision = market.symbolTradeLimit.quantityScale;
+                        newItem.PricePrecision = market.symbolTradeLimit.priceScale;
+
+                        newItem.AmountMin = Convert.ToDecimal(market.symbolTradeLimit.minQuantity, CultureInfo.InvariantCulture);
+                        newItem.CostMin = Convert.ToDecimal(market.symbolTradeLimit.minAmount, CultureInfo.InvariantCulture);
+                    }
 
                     newItem.FeeMaker = 0.1450M / 100;
                     newItem.FeeTaker = 0.1550M / 100;
 
-                    newItem.Url = $"https://poloniex.com/exchange/{market.Key}?c=YFGU6THS";
-                    newItem.Margin = false;
+                    newItem.Url = $"https://poloniex.com/trade/{market.symbol}?c=YFGU6THS";
+                    newItem.Margin = market.crossMargin is not null && market.crossMargin.supportCrossMargin;
 
                     newItem.Info = market;
                     result.Add(newItem);
@@ -113,39 +120,41 @@ namespace AgentBit.Ccxt
 
             var response = await Request(new Base.Request()
             {
-                BaseUri = ApiV1Public,
-                Path = "public?command=returnTicker",
+                BaseUri = ApiV2Public,
+                Path = "markets/ticker24h",
                 ApiType = "public",
                 Method = HttpMethod.Get
             }).ConfigureAwait(false);
 
-            var responseJson = JsonSerializer.Deserialize<Dictionary<string, PoloniexTicker>>(response.Text);
+            var responseJson = JsonSerializer.Deserialize<PoloniexTicker[]>(response.Text);
 
             var dateTime = DateTime.UtcNow;
             var timestamp = (uint)(dateTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-            var result = new List<Ticker>(responseJson.Keys.Count());
+            var result = new List<Ticker>(responseJson.Length);
             foreach (var item in responseJson)
             {
-                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.Key);
+                var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.symbol);
                 if (market == null)
                     continue;
 
                 Ticker ticker = new Ticker();
 
-                ticker.DateTime = dateTime;
-                ticker.Timestamp = timestamp;
+                ticker.Timestamp = item.ts;
+                ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
                 ticker.Symbol = market.Symbol;
 
-                ticker.High = Convert.ToDecimal(item.Value.high24hr, CultureInfo.InvariantCulture);
-                ticker.Low = Convert.ToDecimal(item.Value.low24hr, CultureInfo.InvariantCulture);
-                ticker.Bid = Convert.ToDecimal(item.Value.highestBid, CultureInfo.InvariantCulture);
-                ticker.Ask = Convert.ToDecimal(item.Value.lowestAsk, CultureInfo.InvariantCulture);
-                ticker.Last = Convert.ToDecimal(item.Value.last, CultureInfo.InvariantCulture);
-                ticker.Close = ticker.Last;
-                ticker.Open = ticker.Last * (1 - Convert.ToDecimal(item.Value.percentChange, CultureInfo.InvariantCulture) / 100);
-                ticker.BaseVolume = Convert.ToDecimal(item.Value.quoteVolume, CultureInfo.InvariantCulture);
-                ticker.QuoteVolume = Convert.ToDecimal(item.Value.baseVolume, CultureInfo.InvariantCulture);
+                ticker.High = Convert.ToDecimal(item.high, CultureInfo.InvariantCulture);
+                ticker.Low = Convert.ToDecimal(item.low, CultureInfo.InvariantCulture);
+                ticker.Bid = Convert.ToDecimal(item.bid, CultureInfo.InvariantCulture);
+                ticker.BidVolume = Convert.ToDecimal(item.bidQuantity, CultureInfo.InvariantCulture);
+                ticker.Ask = Convert.ToDecimal(item.ask, CultureInfo.InvariantCulture);
+                ticker.AskVolume = Convert.ToDecimal(item.askQuantity, CultureInfo.InvariantCulture);
+                ticker.Last = Convert.ToDecimal(item.close, CultureInfo.InvariantCulture);
+                ticker.Close = Convert.ToDecimal(item.close, CultureInfo.InvariantCulture);
+                ticker.Open = Convert.ToDecimal(item.open, CultureInfo.InvariantCulture);
+                ticker.BaseVolume = Convert.ToDecimal(item.quantity, CultureInfo.InvariantCulture);
+                ticker.QuoteVolume = Convert.ToDecimal(item.amount, CultureInfo.InvariantCulture);
                 ticker.Average = (ticker.Close + ticker.Open) / 2;
 
                 ticker.Info = item;
@@ -173,30 +182,99 @@ namespace AgentBit.Ccxt
         public class PoloniexTicker
         {
             //{
-            //    "id": 14,
-            //    "last": "0.00000090",
-            //    "lowestAsk": "0.00000091",
-            //    "highestBid": "0.00000089",
-            //    "percentChange": "-0.02173913",
-            //    "baseVolume": "0.28698296",
-            //    "quoteVolume": "328356.84081156",
-            //    "isFrozen": "0",
-            //    "postOnly": "0",
-            //    "high24hr": "0.00000093",
-            //    "low24hr": "0.00000087"
-            //  }
-            public int id { get; set; }
-            public string last { get; set; }
-            public string lowestAsk { get; set; }
-            public string highestBid { get; set; }
-            public string percentChange { get; set; }
-            public string baseVolume { get; set; }
-            public string quoteVolume { get; set; }
-            public string isFrozen { get; set; }
-            public string postOnly { get; set; }
-            public string high24hr { get; set; }
-            public string low24hr { get; set; }
+            //  "symbol" : "BTS_BTC",
+            //  "open" : "0.0000003243",
+            //  "low" : "0.0000003243",
+            //  "high" : "0.00000035",
+            //  "close" : "0.0000003452",
+            //  "quantity" : "4411",
+            //  "amount" : "0.0015364543",
+            //  "tradeCount" : 4,
+            //  "startTime" : 1692923340000,
+            //  "closeTime" : 1693009782250,
+            //  "displayName" : "BTS/BTC",
+            //  "dailyChange" : "0.0644",
+            //  "bid" : "0.0000003325",
+            //  "bidQuantity" : "2706",
+            //  "ask" : "0.0000003559",
+            //  "askQuantity" : "207",
+            //  "ts" : 1693009785446,
+            //  "markPrice" : "0.000000335"
+            //}
+            public string symbol { get; set; }
+            public string open { get; set; }
+            public string low { get; set; }
+            public string high { get; set; }
+            public string close { get; set; }
+            public string quantity { get; set; }
+            public string amount { get; set; }
+            public uint tradeCount { get; set; }
+            public ulong startTime { get; set; }
+            public ulong closeTime { get; set; }
+            public string displayName { get; set; }
+            public string dailyChange { get; set; }
+            public string bid { get; set; }
+            public string bidQuantity { get; set; }
+            public string ask { get; set; }
+            public string askQuantity { get; set; }
+            public ulong ts { get; set; }
+            public string markPrice { get; set; }
         }
+
+        public class PoloniexMarketTradeLimit
+        {
+            public string symbol { get; set; }
+            public int priceScale { get; set; }
+            public int quantityScale { get; set; }
+            public int amountScale { get; set; }
+            public string minQuantity { get; set; }
+            public string minAmount { get; set; }
+            public string highestBid { get; set; }
+            public string lowestAsk { get; set; }
+        }
+
+        public class PoloniexMarketCrossMargin
+        {
+            public bool supportCrossMargin { get; set; }
+            public int maxLeverage { get; set; }
+        }
+
+        public class PoloniexMarket
+        {
+            //{
+            //  "symbol" : "BTS_BTC",
+            //  "baseCurrencyName" : "BTS",
+            //  "quoteCurrencyName" : "BTC",
+            //  "displayName" : "BTS/BTC",
+            //  "state" : "NORMAL",
+            //  "visibleStartTime" : 1659018816626,
+            //  "tradableStartTime" : 1659018816626,
+            //  "symbolTradeLimit" : {
+            //    "symbol" : "BTS_BTC",
+            //    "priceScale" : 10,
+            //    "quantityScale" : 0,
+            //    "amountScale" : 8,
+            //    "minQuantity" : "100",
+            //    "minAmount" : "0.00001",
+            //    "highestBid" : "0",
+            //    "lowestAsk" : "0"
+            //  },
+            //  "crossMargin" : {
+            //    "supportCrossMargin" : false,
+            //    "maxLeverage" : 1
+            //  }
+            //}
+            public string symbol { get; set; }
+            public string baseCurrencyName { get; set; }
+            public string quoteCurrencyName { get; set; }
+            public string displayName { get; set; }
+            public string state { get; set; }
+            public ulong visibleStartTime { get; set; }
+            public ulong tradableStartTime { get; set; }
+            public PoloniexMarketTradeLimit symbolTradeLimit { get; set; }
+            public PoloniexMarketCrossMargin crossMargin { get; set; }
+        }
+
 
     }
 }
