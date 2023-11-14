@@ -128,17 +128,17 @@ namespace AgentBit.Ccxt
                 ticker.DateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ticker.Timestamp);
                 ticker.Symbol = market.Symbol;
 
-                ticker.High = Convert.ToDecimal(item.high24h, CultureInfo.InvariantCulture);
-                ticker.Low = Convert.ToDecimal(item.low24h, CultureInfo.InvariantCulture);
-                ticker.Bid = Convert.ToDecimal(item.bidPx, CultureInfo.InvariantCulture);
-                ticker.BidVolume = Convert.ToDecimal(item.bidSz, CultureInfo.InvariantCulture);
-                ticker.Ask = Convert.ToDecimal(item.askPx, CultureInfo.InvariantCulture);
-                ticker.AskVolume = Convert.ToDecimal(item.askSz, CultureInfo.InvariantCulture);
-                ticker.Open = Convert.ToDecimal(item.open24h, CultureInfo.InvariantCulture);
-                ticker.Last = Convert.ToDecimal(item.last, CultureInfo.InvariantCulture);
+                ticker.High = Convert.ToDecimal(ConvertEmptyStringToZero(item.high24h), CultureInfo.InvariantCulture);
+                ticker.Low = Convert.ToDecimal(ConvertEmptyStringToZero(item.low24h), CultureInfo.InvariantCulture);
+                ticker.Bid = Convert.ToDecimal(ConvertEmptyStringToZero(item.bidPx), CultureInfo.InvariantCulture);
+                ticker.BidVolume = Convert.ToDecimal(ConvertEmptyStringToZero(item.bidSz), CultureInfo.InvariantCulture);
+                ticker.Ask = Convert.ToDecimal(ConvertEmptyStringToZero(item.askPx), CultureInfo.InvariantCulture);
+                ticker.AskVolume = Convert.ToDecimal(ConvertEmptyStringToZero(item.askSz), CultureInfo.InvariantCulture);
+                ticker.Open = Convert.ToDecimal(ConvertEmptyStringToZero(item.open24h), CultureInfo.InvariantCulture);
+                ticker.Last = Convert.ToDecimal(ConvertEmptyStringToZero(item.last), CultureInfo.InvariantCulture);
                 ticker.Close = ticker.Last;
-                ticker.BaseVolume = Convert.ToDecimal(item.vol24h, CultureInfo.InvariantCulture);
-                ticker.QuoteVolume = Convert.ToDecimal(item.volCcy24h, CultureInfo.InvariantCulture);
+                ticker.BaseVolume = Convert.ToDecimal(ConvertEmptyStringToZero(item.vol24h), CultureInfo.InvariantCulture);
+                ticker.QuoteVolume = Convert.ToDecimal(ConvertEmptyStringToZero(item.volCcy24h), CultureInfo.InvariantCulture);
 
                 ticker.Info = item;
 
@@ -149,6 +149,15 @@ namespace AgentBit.Ccxt
             else
                 return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
 
+        }
+
+        /// <summary>
+        /// Checks decimal values for empty strings 
+        /// To avoid System.FormatException: Input string was not in a correct format.
+        /// </summary>
+        private static string ConvertEmptyStringToZero(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "0" : value;
         }
 
 
