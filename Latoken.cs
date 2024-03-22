@@ -157,7 +157,7 @@ namespace AgentBit.Ccxt
                 }
                 else
                 {
-                    ticker.High = Math.Round(ticker.Last * (1 + Math.Abs(change24) / 100), market.PricePrecision);
+                    ticker.High = Math.Round(ticker.Last * (1 + Math.Abs(change24) / 100), Math.Max(market.PricePrecision, 0));
                     ticker.Low = ticker.Last;
                 }
 
