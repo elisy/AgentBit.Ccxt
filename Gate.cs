@@ -85,7 +85,7 @@ namespace AgentBit.Ccxt
                     newItem.FeeTaker = JsonSerializer.Deserialize<decimal>(market.fee) / 100;
                     newItem.FeeMaker = JsonSerializer.Deserialize<decimal>(market.fee) / 100;
 
-                    newItem.Url = $"https://latoken.com/exchange/{newItem.Base.ToUpper()}_{newItem.Quote.ToUpper()}?r=pkkbsa37";
+                    newItem.Url = $"https://www.gate.io/trade/{newItem.Base.ToUpper()}_{newItem.Quote.ToUpper()}?ref=XlUVVFlW&ref_type=106";
 
                     newItem.Info = market;
                     result.Add(newItem);
