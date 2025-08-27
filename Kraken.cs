@@ -138,55 +138,60 @@ namespace AgentBit.Ccxt
 
         public async Task<Ticker[]> FetchTickers(string[] symbols = null)
         {
-            var markets = await FetchMarkets().ConfigureAwait(false);
+            var allMarkets = await FetchMarkets().ConfigureAwait(false);
 
-            var argument = String.Join(',', markets.Where(market => symbols == null || symbols.Contains(market.Symbol)).Select(market => market.Id));
+            var marketsChunks = allMarkets.Chunk(1000); //Error 520 from CoudFlare if too many markets in one request
 
-            var response = await Request(new Base.Request()
+            var result = new List<Ticker>();
+            foreach (var markets in marketsChunks)
             {
-                BaseUri = ApiPublicV1,
-                Path = $"Ticker?pair={argument}",
-                Method = HttpMethod.Get
-            }).ConfigureAwait(false);
+                var argument = String.Join(',', markets.Where(market => symbols == null || symbols.Contains(market.Symbol)).Select(market => market.Id));
 
-            using (var document = JsonDocument.Parse(response.Text))
-            {
-                var resultProperty = document.RootElement.GetProperty("result");
-                var tickers = JsonSerializer.Deserialize<Dictionary<string, KrakenTicker>>(resultProperty.GetRawText());
-
-                var result = new List<Ticker>();
-                foreach (var item in tickers)
+                var response = await Request(new Base.Request()
                 {
-                    var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.Key);
-                    if (market == null)
-                        continue;
+                    BaseUri = ApiPublicV1,
+                    Path = $"Ticker?pair={argument}",
+                    Method = HttpMethod.Get
+                }).ConfigureAwait(false);
 
-                    Ticker ticker = new Ticker();
+                using (var document = JsonDocument.Parse(response.Text))
+                {
+                    var resultProperty = document.RootElement.GetProperty("result");
+                    var tickers = JsonSerializer.Deserialize<Dictionary<string, KrakenTicker>>(resultProperty.GetRawText());
 
-                    ticker.DateTime = DateTime.UtcNow;
-                    ticker.Timestamp = (uint)(ticker.DateTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                    foreach (var item in tickers)
+                    {
+                        var market = (await FetchMarkets().ConfigureAwait(false)).FirstOrDefault(m => m.Id == item.Key);
+                        if (market == null)
+                            continue;
 
-                    ticker.Symbol = market.Symbol;
-                    ticker.High = JsonSerializer.Deserialize<decimal>(item.Value.h[1]);
-                    ticker.Low = JsonSerializer.Deserialize<decimal>(item.Value.l[1]);
-                    ticker.Bid = JsonSerializer.Deserialize<decimal>(item.Value.b[0]);
-                    ticker.Ask = JsonSerializer.Deserialize<decimal>(item.Value.a[0]);
-                    ticker.Vwap = JsonSerializer.Deserialize<decimal>(item.Value.p[1]);
-                    ticker.Open = JsonSerializer.Deserialize<decimal>(item.Value.o);
-                    ticker.Last = JsonSerializer.Deserialize<decimal>(item.Value.c[0]);
-                    ticker.Close = ticker.Last;
-                    ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.Value.v[1]);
-                    ticker.QuoteVolume = ticker.BaseVolume * ticker.Vwap;
-                    ticker.Info = item;
+                        Ticker ticker = new Ticker();
 
-                    result.Add(ticker);
+                        ticker.DateTime = DateTime.UtcNow;
+                        ticker.Timestamp = (uint)(ticker.DateTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+                        ticker.Symbol = market.Symbol;
+                        ticker.High = JsonSerializer.Deserialize<decimal>(item.Value.h[1]);
+                        ticker.Low = JsonSerializer.Deserialize<decimal>(item.Value.l[1]);
+                        ticker.Bid = JsonSerializer.Deserialize<decimal>(item.Value.b[0]);
+                        ticker.Ask = JsonSerializer.Deserialize<decimal>(item.Value.a[0]);
+                        ticker.Vwap = JsonSerializer.Deserialize<decimal>(item.Value.p[1]);
+                        ticker.Open = JsonSerializer.Deserialize<decimal>(item.Value.o);
+                        ticker.Last = JsonSerializer.Deserialize<decimal>(item.Value.c[0]);
+                        ticker.Close = ticker.Last;
+                        ticker.BaseVolume = JsonSerializer.Deserialize<decimal>(item.Value.v[1]);
+                        ticker.QuoteVolume = ticker.BaseVolume * ticker.Vwap;
+                        ticker.Info = item;
+
+                        result.Add(ticker);
+                    }
                 }
+            }
 
-                if (symbols == null)
+            if (symbols == null)
                     return result.ToArray();
                 else
                     return result.Where(m => symbols.Contains(m.Symbol)).ToArray();
-            }
         }
 
 
